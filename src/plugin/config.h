@@ -26,7 +26,11 @@
 #define PLUG_DOES_MIDI_IN 0
 #define PLUG_DOES_MIDI_OUT 0
 #define PLUG_DOES_MPE 0
-#define PLUG_DOES_STATE_CHUNKS 0
+
+// Host state is serialized as a versioned GitaSedap chunk. This establishes a
+// migration boundary before profiles and structural DSP state are introduced.
+#define PLUG_DOES_STATE_CHUNKS 1
+
 #define PLUG_HAS_UI 1
 #define PLUG_WIDTH 720
 #define PLUG_HEIGHT 360

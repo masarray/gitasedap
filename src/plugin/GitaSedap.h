@@ -2,6 +2,7 @@
 
 #include "IPlug_include_in_plug_hdr.h"
 #include "core/ParameterSpec.h"
+#include "core/StateSchema.h"
 
 namespace gs = gitasedap::core;
 
@@ -27,6 +28,9 @@ class GitaSedap final : public Plugin
 {
 public:
   explicit GitaSedap(const InstanceInfo& info);
+
+  bool SerializeState(IByteChunk& chunk) const override;
+  int UnserializeState(const IByteChunk& chunk, int startPos) override;
 
 #if IPLUG_EDITOR
   bool OnHostRequestingSupportedViewConfiguration(int width, int height) override

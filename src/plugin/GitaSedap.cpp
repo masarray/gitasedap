@@ -116,6 +116,28 @@ GitaSedap::GitaSedap(const InstanceInfo& info)
 #endif
 }
 
+bool GitaSedap::SerializeState(IByteChunk& chunk) const
+{
+  const auto header = gs::state::encodeHeader();
+  chunk.PutBytes(header.data(), static_cast<int>(header.size()));
+  return SerializeParams(chunk);
+}
+
+int GitaSedap::UnserializeState(const IByteChunk& chunk, int startPos)
+{
+  gs::state::HeaderBytes header{};
+  const int payloadPos = chunk.GetBytes(
+    header.data(),
+    static_cast<int>(header.size()),
+    startPos
+  );
+
+  if(payloadPos < 0 || !gs::state::isSupportedHeader(header))
+    return -1;
+
+  return UnserializeParams(chunk, payloadPos);
+}
+
 #if IPLUG_DSP
 double GitaSedap::dbToLinear(double db) noexcept
 {
