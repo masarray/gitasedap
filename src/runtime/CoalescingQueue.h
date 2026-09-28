@@ -91,7 +91,7 @@ public:
     return item;
   }
 
-  [[nodiscard]] std::size_t size() const noexcept
+  [[nodiscard]] std::size_t size() const
   {
     std::lock_guard lock(mMutex);
     return mSize;
@@ -102,7 +102,7 @@ public:
     return Capacity;
   }
 
-  [[nodiscard]] bool empty() const noexcept
+  [[nodiscard]] bool empty() const
   {
     return size() == 0;
   }
