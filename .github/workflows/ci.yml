@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-vst3:
+    name: Windows VST3 / Release
+    # Pin the runner generation. "windows-latest" can change Visual Studio
+    # underneath a previously verified CMake preset.
+    runs-on: windows-2022
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Cache fetched dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: out/build/windows-x64/_deps
+          key: windows-2022-iplug2-d54f69050f517e43b941d88c2a170f0a840b9ee4-vst3-3cdf9ca5d1f5b1b21e0a86832aa4abe55607bd96
+
+      - name: Configure
+        run: cmake --preset windows-x64
+
+      - name: Build
+        run: cmake --build --preset windows-x64-release
+
+      - name: Test
+        run: ctest --preset windows-x64-release
+
+      - name: Stage VST3 artifact
+        shell: pwsh
+        run: |
+          $plugin = Get-ChildItem -Path out/build/windows-x64 -Recurse -Directory -Filter GitaSedap.vst3 |
+            Select-Object -First 1
+
+          if (-not $plugin) {
+            throw "GitaSedap.vst3 was not produced by the build."
+          }
+
+          New-Item -ItemType Directory -Force -Path out/artifact | Out-Null
+          Copy-Item -Recurse -Force $plugin.FullName out/artifact/GitaSedap.vst3
+
+      - name: Upload VST3
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: GitaSedap-Windows-VST3-${{ github.sha }}
+          path: out/artifact/GitaSedap.vst3
+          if-no-files-found: error
+          retention-days: 14

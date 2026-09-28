@@ -1,0 +1,65 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "windows-x64",
+      "displayName": "Windows x64 / Visual Studio 2022",
+      "generator": "Visual Studio 17 2022",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "binaryDir": "${sourceDir}/out/build/windows-x64",
+      "cacheVariables": {
+        "GITASEDAP_BUILD_PLUGIN": "ON",
+        "GITASEDAP_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "core-only",
+      "displayName": "Core tests only",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/core-only",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "GITASEDAP_BUILD_PLUGIN": "OFF",
+        "GITASEDAP_BUILD_TESTS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "windows-x64-release",
+      "configurePreset": "windows-x64",
+      "configuration": "Release",
+      "jobs": 4
+    },
+    {
+      "name": "core-only",
+      "configurePreset": "core-only",
+      "jobs": 4
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "windows-x64-release",
+      "configurePreset": "windows-x64",
+      "configuration": "Release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "core-only",
+      "configurePreset": "core-only",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}
