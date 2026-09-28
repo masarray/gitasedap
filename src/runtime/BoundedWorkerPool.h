@@ -10,6 +10,7 @@
 #include <optional>
 #include <stop_token>
 #include <thread>
+#include <utility>
 #include <vector>
 
 namespace gitasedap::runtime
@@ -94,10 +95,10 @@ public:
 
   [[nodiscard]] bool waitUntilIdleFor(std::chrono::milliseconds timeout);
 
-  [[nodiscard]] std::size_t workerCount() const noexcept;
+  [[nodiscard]] std::size_t workerCount() const;
   [[nodiscard]] std::size_t queueCapacity() const noexcept;
-  [[nodiscard]] std::size_t queuedTaskCount() const noexcept;
-  [[nodiscard]] std::size_t activeTaskCount() const noexcept;
+  [[nodiscard]] std::size_t queuedTaskCount() const;
+  [[nodiscard]] std::size_t activeTaskCount() const;
   [[nodiscard]] std::size_t unhandledExceptionCount() const noexcept;
 
 private:
