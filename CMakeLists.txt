@@ -26,6 +26,8 @@ target_include_directories(
 )
 target_compile_features(gitasedap_core INTERFACE cxx_std_20)
 
+add_subdirectory(src/runtime)
+
 if(GITASEDAP_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
