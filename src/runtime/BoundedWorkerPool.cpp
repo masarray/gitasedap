@@ -122,7 +122,7 @@ bool BoundedWorkerPool::waitUntilIdleFor(std::chrono::milliseconds timeout)
   );
 }
 
-std::size_t BoundedWorkerPool::workerCount() const noexcept
+std::size_t BoundedWorkerPool::workerCount() const
 {
   std::lock_guard lock(mMutex);
   return mWorkers.size();
@@ -133,13 +133,13 @@ std::size_t BoundedWorkerPool::queueCapacity() const noexcept
   return mCapacity;
 }
 
-std::size_t BoundedWorkerPool::queuedTaskCount() const noexcept
+std::size_t BoundedWorkerPool::queuedTaskCount() const
 {
   std::lock_guard lock(mMutex);
   return mCount;
 }
 
-std::size_t BoundedWorkerPool::activeTaskCount() const noexcept
+std::size_t BoundedWorkerPool::activeTaskCount() const
 {
   std::lock_guard lock(mMutex);
   return mActiveTasks;
