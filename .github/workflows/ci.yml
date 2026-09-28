@@ -34,8 +34,57 @@ jobs:
       - name: Build
         run: cmake --build --preset windows-x64-release
 
-      - name: Test
+      - name: Test core invariants
         run: ctest --preset windows-x64-release
+
+      - name: Configure official VST3 validator
+        shell: pwsh
+        run: |
+          $sdk = Resolve-Path "out/build/windows-x64/_deps/gitasedap_iplug2-src/Dependencies/IPlug/VST3_SDK"
+
+          cmake `
+            -S $sdk `
+            -B out/build/vst3-validator `
+            -G "Visual Studio 17 2022" `
+            -A x64 `
+            -DSMTG_ENABLE_VST3_PLUGIN_EXAMPLES=OFF `
+            -DSMTG_ENABLE_VSTGUI_SUPPORT=OFF
+
+      - name: Build official VST3 validator
+        run: cmake --build out/build/vst3-validator --config Release --target validator --parallel 4
+
+      - name: Validate VST3 and lifecycle
+        shell: pwsh
+        run: |
+          $validator = Get-ChildItem -Path out/build/vst3-validator -Recurse -File -Filter validator.exe |
+            Select-Object -First 1
+
+          if (-not $validator) {
+            throw "Steinberg validator.exe was not produced."
+          }
+
+          $plugin = Get-ChildItem -Path out/build/windows-x64 -Recurse -Directory -Filter GitaSedap.vst3 |
+            Select-Object -First 1
+
+          if (-not $plugin) {
+            throw "GitaSedap.vst3 was not produced by the build."
+          }
+
+          Write-Host "Validator: $($validator.FullName)"
+          Write-Host "Plugin:    $($plugin.FullName)"
+
+          # Default mode validates one shared instance. Local-instance mode
+          # creates a fresh plug-in instance per test and exercises lifecycle
+          # construction/destruction more aggressively.
+          & $validator.FullName $plugin.FullName
+          if ($LASTEXITCODE -ne 0) {
+            throw "VST3 validator failed in default instance mode."
+          }
+
+          & $validator.FullName "-l" $plugin.FullName
+          if ($LASTEXITCODE -ne 0) {
+            throw "VST3 validator failed in local-instance lifecycle mode."
+          }
 
       - name: Stage VST3 artifact
         shell: pwsh
