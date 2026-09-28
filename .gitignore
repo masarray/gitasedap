@@ -1,0 +1,22 @@
+# Build output
+/out/
+/build/
+/cmake-build-*/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.VC.db
+*.VC.VC.opendb
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Profiling / test output
+*.profraw
+*.profdata
+Testing/
