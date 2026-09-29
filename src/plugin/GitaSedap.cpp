@@ -67,50 +67,329 @@ GitaSedap::GitaSedap(const InstanceInfo& info)
 
   mLayoutFunc = [&](IGraphics* pGraphics) {
     pGraphics->AttachCornerResizer(EUIResizerMode::Scale, false);
-    pGraphics->AttachPanelBackground(COLOR_LIGHT_GRAY);
+
+    const IColor shell{255, 28, 31, 35};
+    const IColor panel{255, 37, 41, 46};
+    const IColor panelRaised{255, 45, 49, 55};
+    const IColor surface{255, 56, 61, 68};
+    const IColor surfaceDark{255, 21, 24, 28};
+    const IColor accent{255, 71, 188, 205};
+    const IColor accentSoft{255, 104, 211, 225};
+    const IColor textPrimary{255, 234, 238, 241};
+    const IColor textSecondary{255, 159, 168, 176};
+    const IColor line{255, 68, 74, 82};
+    const IColor shadow{120, 0, 0, 0};
+
+    const IVStyle sectionStyle = DEFAULT_STYLE
+      .WithShowLabel(false)
+      .WithShowValue(false)
+      .WithDrawFrame(true)
+      .WithFrameThickness(1.f)
+      .WithRoundness(0.08f)
+      .WithDrawShadows(false)
+      .WithColor(kBG, panel)
+      .WithColor(kFG, panel)
+      .WithColor(kFR, line);
+
+    const IVStyle headerStyle = sectionStyle
+      .WithColor(kBG, panelRaised)
+      .WithColor(kFG, panelRaised);
+
+    const IVStyle knobStyle = DEFAULT_STYLE
+      .WithShowLabel(true)
+      .WithShowValue(true)
+      .WithDrawFrame(false)
+      .WithDrawShadows(true)
+      .WithShadowOffset(2.f)
+      .WithRoundness(1.f)
+      .WithWidgetFrac(0.68f)
+      .WithColor(kBG, shell)
+      .WithColor(kFG, surface)
+      .WithColor(kPR, accent)
+      .WithColor(kFR, line)
+      .WithColor(kHL, accentSoft)
+      .WithColor(kSH, shadow)
+      .WithColor(kX1, surfaceDark)
+      .WithLabelText(IText(12.f, textSecondary))
+      .WithValueText(IText(12.f, textPrimary));
+
+    const IVStyle outputStyle = knobStyle
+      .WithWidgetFrac(0.62f)
+      .WithColor(kPR, accentSoft);
+
+    const IVStyle sourceStyle = DEFAULT_STYLE
+      .WithShowLabel(false)
+      .WithShowValue(false)
+      .WithDrawFrame(true)
+      .WithFrameThickness(1.f)
+      .WithDrawShadows(false)
+      .WithRoundness(0.16f)
+      .WithColor(kBG, surfaceDark)
+      .WithColor(kFG, panelRaised)
+      .WithColor(kPR, accent)
+      .WithColor(kFR, line)
+      .WithColor(kHL, accentSoft)
+      .WithColor(kSH, shadow)
+      .WithLabelText(IText(11.f, textSecondary))
+      .WithValueText(IText(11.f, textPrimary));
+
+    const IVStyle bypassStyle = DEFAULT_STYLE
+      .WithShowLabel(true)
+      .WithShowValue(false)
+      .WithDrawFrame(true)
+      .WithFrameThickness(1.f)
+      .WithDrawShadows(false)
+      .WithRoundness(1.f)
+      .WithWidgetFrac(0.72f)
+      .WithColor(kBG, surfaceDark)
+      .WithColor(kFG, surface)
+      .WithColor(kPR, accent)
+      .WithColor(kFR, line)
+      .WithColor(kHL, accentSoft)
+      .WithLabelText(IText(11.f, textSecondary))
+      .WithValueText(IText(11.f, textPrimary));
+
+    pGraphics->AttachPanelBackground(shell);
 
     const IRECT bounds = pGraphics->GetBounds();
-    const IRECT inner = bounds.GetPadded(-18.f);
-    const IRECT title = inner.GetFromTop(34.f);
-    const IRECT footer = inner.GetFromBottom(56.f);
-    const IRECT knobs = IRECT(inner.L, title.B + 12.f, inner.R, footer.T - 10.f);
+    const IRECT outer = bounds.GetPadded(-14.f);
 
-    pGraphics->AttachControl(
-      new ITextControl(title, "GitaSedap  |  P3 SOURCE CONDITIONING", IText(20.f))
+    const IRECT header(
+      outer.L,
+      outer.T,
+      outer.R,
+      outer.T + 54.f
     );
 
-    constexpr int knobCount = 4;
-    const int params[knobCount]{
+    const IRECT footer(
+      outer.L,
+      outer.B - 88.f,
+      outer.R,
+      outer.B
+    );
+
+    const IRECT main(
+      outer.L,
+      header.B + 10.f,
+      outer.R,
+      footer.T - 10.f
+    );
+
+    pGraphics->AttachControl(
+      new IVPanelControl(header, "", headerStyle)
+    );
+    pGraphics->AttachControl(
+      new IVPanelControl(main, "", sectionStyle)
+    );
+    pGraphics->AttachControl(
+      new IVPanelControl(footer, "", sectionStyle)
+    );
+
+    const IRECT brand(
+      header.L + 18.f,
+      header.T + 7.f,
+      header.L + 250.f,
+      header.B - 7.f
+    );
+
+    const IRECT phase(
+      header.R - 235.f,
+      header.T + 10.f,
+      header.R - 18.f,
+      header.B - 10.f
+    );
+
+    pGraphics->AttachControl(
+      new ITextControl(
+        brand.GetFromTop(24.f),
+        "GitaSedap",
+        IText(21.f, textPrimary, nullptr, EAlign::Near)
+      )
+    );
+
+    pGraphics->AttachControl(
+      new ITextControl(
+        brand.GetFromBottom(16.f),
+        "ACOUSTIC GUITAR ENHANCER",
+        IText(10.f, textSecondary, nullptr, EAlign::Near)
+      )
+    );
+
+    pGraphics->AttachControl(
+      new ITextControl(
+        phase,
+        "P3  •  SOURCE CONDITIONING  •  ZERO LATENCY",
+        IText(10.f, accentSoft, nullptr, EAlign::Far)
+      )
+    );
+
+    const float mainWidth = main.W();
+    const float primaryAreaWidth = mainWidth * 0.77f;
+    const IRECT primaryArea(
+      main.L + 14.f,
+      main.T + 12.f,
+      main.L + primaryAreaWidth,
+      main.B - 12.f
+    );
+
+    const IRECT outputArea(
+      primaryArea.R + 8.f,
+      main.T + 12.f,
+      main.R - 14.f,
+      main.B - 12.f
+    );
+
+    pGraphics->AttachControl(
+      new ITextControl(
+        IRECT(
+          primaryArea.L + 8.f,
+          primaryArea.T,
+          primaryArea.R - 8.f,
+          primaryArea.T + 18.f
+        ),
+        "TONE SHAPING",
+        IText(10.f, textSecondary, nullptr, EAlign::Near)
+      )
+    );
+
+    constexpr int primaryCount = 3;
+    const int primaryParams[primaryCount]{
       kParamBody,
       kParamAir,
-      kParamEnhance,
-      kParamOutputDb
+      kParamEnhance
     };
-    const char* labels[knobCount]{
+    const char* primaryLabels[primaryCount]{
       "BODY",
       "AIR",
-      "ENHANCE",
-      "OUTPUT"
+      "ENHANCE"
     };
 
-    const float cellWidth = knobs.W() / static_cast<float>(knobCount);
-    for(int i = 0; i < knobCount; ++i)
+    const float knobTop = primaryArea.T + 20.f;
+    const float knobBottom = primaryArea.B - 2.f;
+    const float cellWidth =
+      (primaryArea.W() - 8.f) / static_cast<float>(primaryCount);
+
+    for(int i = 0; i < primaryCount; ++i)
     {
-      const float left = knobs.L + (cellWidth * static_cast<float>(i));
-      const IRECT cell(left, knobs.T, left + cellWidth, knobs.B);
+      const float left =
+        primaryArea.L + 4.f + (cellWidth * static_cast<float>(i));
+
+      const IRECT cell(
+        left,
+        knobTop,
+        left + cellWidth,
+        knobBottom
+      );
+
       pGraphics->AttachControl(
-        new IVKnobControl(cell.GetCentredInside(112.f), params[i], labels[i])
+        new IVKnobControl(
+          cell.GetCentredInside(142.f),
+          primaryParams[i],
+          primaryLabels[i],
+          knobStyle,
+          true,
+          false,
+          -140.f,
+          140.f,
+          -140.f,
+          EDirection::Vertical,
+          DEFAULT_GEARING,
+          3.f
+        )
       );
     }
 
-    const IRECT sourceRect(footer.L, footer.T, footer.L + 230.f, footer.B);
-    const IRECT bypassRect(footer.R - 180.f, footer.T, footer.R, footer.B);
+    pGraphics->AttachControl(
+      new ITextControl(
+        IRECT(
+          outputArea.L + 6.f,
+          outputArea.T,
+          outputArea.R - 6.f,
+          outputArea.T + 18.f
+        ),
+        "LEVEL",
+        IText(10.f, textSecondary)
+      )
+    );
 
     pGraphics->AttachControl(
-      new IVMenuButtonControl(sourceRect, kParamInputSource, "INPUT SOURCE")
+      new IVKnobControl(
+        IRECT(
+          outputArea.L + 8.f,
+          outputArea.T + 22.f,
+          outputArea.R - 8.f,
+          outputArea.B - 2.f
+        ),
+        kParamOutputDb,
+        "OUTPUT",
+        outputStyle,
+        true,
+        false,
+        -140.f,
+        140.f,
+        0.f,
+        EDirection::Vertical,
+        DEFAULT_GEARING,
+        3.f
+      )
     );
+
+    const IRECT sourceLabel(
+      footer.L + 16.f,
+      footer.T + 10.f,
+      footer.L + 130.f,
+      footer.T + 28.f
+    );
+
     pGraphics->AttachControl(
-      new IVToggleControl(bypassRect, kParamBypass, "BYPASS")
+      new ITextControl(
+        sourceLabel,
+        "INPUT SOURCE",
+        IText(10.f, textSecondary, nullptr, EAlign::Near)
+      )
+    );
+
+    const IRECT sourceControl(
+      footer.L + 14.f,
+      footer.T + 31.f,
+      footer.R - 170.f,
+      footer.B - 12.f
+    );
+
+    const std::vector<const char*> sourceLabels{
+      "ACTIVE PIEZO",
+      "PASSIVE PIEZO",
+      "MAGNETIC"
+    };
+
+    pGraphics->AttachControl(
+      new IVTabSwitchControl(
+        sourceControl,
+        kParamInputSource,
+        sourceLabels,
+        "",
+        sourceStyle,
+        EVShape::Rectangle,
+        EDirection::Horizontal
+      )
+    );
+
+    const IRECT bypassRect(
+      footer.R - 146.f,
+      footer.T + 14.f,
+      footer.R - 16.f,
+      footer.B - 12.f
+    );
+
+    pGraphics->AttachControl(
+      new IVToggleControl(
+        bypassRect,
+        kParamBypass,
+        "BYPASS",
+        bypassStyle,
+        "ACTIVE",
+        "BYPASSED"
+      )
     );
   };
 #endif
