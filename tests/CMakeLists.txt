@@ -238,3 +238,42 @@ add_test(
   NAME gitasedap.smoothing
   COMMAND gitasedap_smoothing_tests
 )
+
+add_executable(
+  gitasedap_body_profile_tests
+  BodyProfileTests.cpp
+)
+
+target_link_libraries(
+  gitasedap_body_profile_tests
+  PRIVATE
+    gitasedap_dsp
+)
+
+target_compile_features(gitasedap_body_profile_tests PRIVATE cxx_std_20)
+gitasedap_enable_project_warnings(gitasedap_body_profile_tests)
+
+add_test(
+  NAME gitasedap.body_profile
+  COMMAND gitasedap_body_profile_tests
+)
+
+add_executable(
+  gitasedap_hybrid_body_engine_tests
+  HybridBodyEngineTests.cpp
+)
+
+target_link_libraries(
+  gitasedap_hybrid_body_engine_tests
+  PRIVATE
+    gitasedap_dsp
+    gitasedap_lab
+)
+
+target_compile_features(gitasedap_hybrid_body_engine_tests PRIVATE cxx_std_20)
+gitasedap_enable_project_warnings(gitasedap_hybrid_body_engine_tests)
+
+add_test(
+  NAME gitasedap.hybrid_body_engine
+  COMMAND gitasedap_hybrid_body_engine_tests
+)
