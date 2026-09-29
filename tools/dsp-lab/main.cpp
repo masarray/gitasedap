@@ -1,6 +1,7 @@
 #include "core/ParameterSpec.h"
 #include "dsp/BodyProfile.h"
 #include "dsp/BodyProfileCompiler.h"
+#include "dsp/CrossfadingBodyEngine.h"
 #include "dsp/HybridBodyEngine.h"
 #include "dsp/SourceAdapter.h"
 #include "dsp/TransferFilter.h"
@@ -287,6 +288,7 @@ void printUsage()
     << "  benchmark-source [sampleRate] [blockSize] [iterations]\n"
     << "  benchmark-transfer [sampleRate] [blockSize] [iterations]\n"
     << "  benchmark-body [sampleRate] [blockSize] [iterations]\n"
+    << "  benchmark-body-switch [sampleRate] [blockSize] [iterations]\n"
     << "  source-demo <input.wav> <processed.wav> [sampleRate]\n"
     << "  body-demo <input.wav> <processed.wav> [sampleRate]\n";
 }
@@ -611,6 +613,90 @@ int commandBenchmarkBody(int argc, char** argv)
   return 0;
 }
 
+int commandBenchmarkBodySwitch(int argc, char** argv)
+{
+  const auto sampleRate = parseU32(argc > 2 ? argv[2] : nullptr, 48000U);
+  const auto blockSize = static_cast<std::size_t>(
+    parseU32(argc > 3 ? argv[3] : nullptr, 64U)
+  );
+  const auto iterations = static_cast<std::size_t>(
+    parseU32(argc > 4 ? argv[4] : nullptr, 10000U)
+  );
+
+  if(blockSize == 0)
+    throw std::invalid_argument("blockSize must be non-zero");
+
+  const auto natural = gsdsp::compileBodyProfile(
+    gsdsp::naturalDevelopmentProfile(),
+    sampleRate
+  );
+
+  const auto dreadnought = gsdsp::compileBodyProfile(
+    gsdsp::dreadnoughtDevelopmentProfile(),
+    sampleRate
+  );
+
+  if(!natural.ok() || !dreadnought.ok())
+    throw std::runtime_error("unable to compile P4B development profiles");
+
+  gsdsp::CrossfadingBodyEngine engine;
+  engine.prepare(sampleRate, 1.0, 15.0);
+  engine.activateInitial(natural.prepared);
+
+  std::vector<double> input(blockSize, 0.0);
+
+  for(std::size_t frame = 0; frame < blockSize; ++frame)
+  {
+    const double time =
+      static_cast<double>(frame) / static_cast<double>(sampleRate);
+
+    input[frame] =
+      (0.16 * std::sin(2.0 * std::numbers::pi * 110.0 * time))
+      + (0.08 * std::sin(2.0 * std::numbers::pi * 220.0 * time))
+      + (0.04 * std::sin(2.0 * std::numbers::pi * 880.0 * time));
+  }
+
+  bool targetDreadnought = true;
+  volatile double sink = 0.0;
+
+  const auto result = gslab::DeadlineBenchmark::run(
+    sampleRate,
+    blockSize,
+    512,
+    iterations,
+    [&] {
+      if(!engine.isTransitioning())
+      {
+        (void) engine.beginProfileTransition(
+          targetDreadnought
+            ? dreadnought.prepared
+            : natural.prepared
+        );
+
+        targetDreadnought = !targetDreadnought;
+      }
+
+      double local = 0.0;
+
+      for(const double sample : input)
+        local += engine.processSample(sample);
+
+      sink = local;
+    }
+  );
+
+  std::cout
+    << "benchmark=hybrid_body_switch\n"
+    << "sample_rate=" << sampleRate << "\n"
+    << "block_size=" << blockSize << "\n"
+    << "transition_samples=" << engine.transitionSamples() << "\n";
+
+  printBenchmark(result);
+  std::cout << "sink=" << sink << "\n";
+
+  return 0;
+}
+
 int commandBodyDemo(int argc, char** argv)
 {
   if(argc < 4)
@@ -739,6 +825,9 @@ int main(int argc, char** argv)
 
     if(command == "benchmark-body")
       return commandBenchmarkBody(argc, argv);
+
+    if(command == "benchmark-body-switch")
+      return commandBenchmarkBodySwitch(argc, argv);
 
     if(command == "source-demo")
       return commandSourceDemo(argc, argv);
