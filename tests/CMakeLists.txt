@@ -104,3 +104,98 @@ add_test(
   NAME gitasedap.worker_pool
   COMMAND gitasedap_worker_pool_tests
 )
+
+add_executable(
+  gitasedap_dsp_laboratory_tests
+  DspLaboratoryTests.cpp
+)
+
+target_link_libraries(
+  gitasedap_dsp_laboratory_tests
+  PRIVATE
+    gitasedap_lab
+)
+
+target_compile_features(gitasedap_dsp_laboratory_tests PRIVATE cxx_std_20)
+gitasedap_enable_project_warnings(gitasedap_dsp_laboratory_tests)
+
+add_test(
+  NAME gitasedap.dsp_laboratory
+  COMMAND gitasedap_dsp_laboratory_tests
+)
+
+add_executable(
+  gitasedap_wav_file_tests
+  WavFileTests.cpp
+)
+
+target_link_libraries(
+  gitasedap_wav_file_tests
+  PRIVATE
+    gitasedap_lab
+)
+
+target_compile_features(gitasedap_wav_file_tests PRIVATE cxx_std_20)
+gitasedap_enable_project_warnings(gitasedap_wav_file_tests)
+
+add_test(
+  NAME gitasedap.wav_file
+  COMMAND gitasedap_wav_file_tests
+)
+
+add_executable(
+  gitasedap_parameter_torture_tests
+  ParameterTortureTests.cpp
+)
+
+target_link_libraries(
+  gitasedap_parameter_torture_tests
+  PRIVATE
+    gitasedap_lab
+)
+
+target_compile_features(gitasedap_parameter_torture_tests PRIVATE cxx_std_20)
+gitasedap_enable_project_warnings(gitasedap_parameter_torture_tests)
+
+add_test(
+  NAME gitasedap.parameter_torture
+  COMMAND gitasedap_parameter_torture_tests
+)
+
+add_executable(
+  gitasedap_deadline_benchmark_tests
+  DeadlineBenchmarkTests.cpp
+)
+
+target_link_libraries(
+  gitasedap_deadline_benchmark_tests
+  PRIVATE
+    gitasedap_lab
+)
+
+target_compile_features(gitasedap_deadline_benchmark_tests PRIVATE cxx_std_20)
+gitasedap_enable_project_warnings(gitasedap_deadline_benchmark_tests)
+
+add_test(
+  NAME gitasedap.deadline_benchmark
+  COMMAND gitasedap_deadline_benchmark_tests
+)
+
+add_executable(
+  gitasedap_signal_generator_tests
+  SignalGeneratorTests.cpp
+)
+
+target_link_libraries(
+  gitasedap_signal_generator_tests
+  PRIVATE
+    gitasedap_lab
+)
+
+target_compile_features(gitasedap_signal_generator_tests PRIVATE cxx_std_20)
+gitasedap_enable_project_warnings(gitasedap_signal_generator_tests)
+
+add_test(
+  NAME gitasedap.signal_generator
+  COMMAND gitasedap_signal_generator_tests
+)
