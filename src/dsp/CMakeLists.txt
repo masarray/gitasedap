@@ -1,6 +1,9 @@
 add_library(
   gitasedap_dsp
   STATIC
+    BodyProfile.cpp
+    BodyProfileCompiler.cpp
+    HybridBodyEngine.cpp
     SourceAdapter.cpp
 )
 
