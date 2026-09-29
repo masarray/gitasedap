@@ -230,7 +230,7 @@ GitaSedap::GitaSedap(const InstanceInfo& info)
     pGraphics->AttachControl(
       new ITextControl(
         phase,
-        "P3  •  SOURCE CONDITIONING  •  ZERO LATENCY",
+        "P4A  •  HYBRID BODY CORE  •  ZERO LATENCY",
         IText(10.f, accentSoft, nullptr, EAlign::Far)
       )
     );
@@ -457,6 +457,19 @@ void GitaSedap::OnReset()
   mSourceAdapter.setSourceType(currentInputSource());
   mSourceAdapter.prepare(sampleRate);
 
+  mBodyEngine.prepare(
+    sampleRate,
+    std::clamp(GetParam(kParamBody)->Value() / 100.0, 0.0, 1.0)
+  );
+
+  const auto bodyProfile = gsdsp::compileBodyProfile(
+    gsdsp::naturalDevelopmentProfile(),
+    sampleRate
+  );
+
+  if(bodyProfile.ok())
+    mBodyEngine.configure(bodyProfile.prepared);
+
   mOutputGain.prepare(sampleRate, 20.0);
   mOutputGain.reset(dbToLinear(GetParam(kParamOutputDb)->Value()));
 
@@ -486,6 +499,9 @@ void GitaSedap::ProcessBlock(sample** inputs, sample** outputs, int nFrames)
   }
 
   mSourceAdapter.setSourceType(currentInputSource());
+  mBodyEngine.setBodyAmountNormalized(
+    std::clamp(GetParam(kParamBody)->Value() / 100.0, 0.0, 1.0)
+  );
   mOutputGain.setTarget(dbToLinear(GetParam(kParamOutputDb)->Value()));
   mBypassCrossfade.setBypassed(GetParam(kParamBypass)->Bool());
 
@@ -498,7 +514,8 @@ void GitaSedap::ProcessBlock(sample** inputs, sample** outputs, int nFrames)
     const double dry = static_cast<double>(monoInput[frame]);
 
     const double conditioned = mSourceAdapter.processSample(dry);
-    const double wet = conditioned * mOutputGain.next();
+    const double bodied = mBodyEngine.processSample(conditioned);
+    const double wet = bodied * mOutputGain.next();
 
     const sample value = static_cast<sample>(
       mBypassCrossfade.process(dry, wet)

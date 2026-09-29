@@ -3,6 +3,8 @@
 #include "IPlug_include_in_plug_hdr.h"
 #include "core/ParameterSpec.h"
 #include "core/StateSchema.h"
+#include "dsp/BodyProfileCompiler.h"
+#include "dsp/HybridBodyEngine.h"
 #include "dsp/SourceAdapter.h"
 #include "dsp/Smoothing.h"
 
@@ -53,6 +55,7 @@ private:
   [[nodiscard]] gs::InputSource currentInputSource() const noexcept;
 
   gsdsp::SourceAdapter mSourceAdapter;
+  gsdsp::HybridBodyEngine mBodyEngine;
   gsdsp::LinearSmoother mOutputGain;
   gsdsp::BypassCrossfade mBypassCrossfade;
 #endif
