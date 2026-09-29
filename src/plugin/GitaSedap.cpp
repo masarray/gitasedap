@@ -76,7 +76,7 @@ GitaSedap::GitaSedap(const InstanceInfo& info)
     const IRECT knobs = IRECT(inner.L, title.B + 12.f, inner.R, footer.T - 10.f);
 
     pGraphics->AttachControl(
-      new ITextControl(title, "GitaSedap  |  P1 ENGINEERING SHELL", IText(20.f))
+      new ITextControl(title, "GitaSedap  |  P3 SOURCE CONDITIONING", IText(20.f))
     );
 
     constexpr int knobCount = 4;
@@ -144,10 +144,33 @@ double GitaSedap::dbToLinear(double db) noexcept
   return std::pow(10.0, db / 20.0);
 }
 
+gs::InputSource GitaSedap::currentInputSource() const noexcept
+{
+  const int raw = static_cast<int>(
+    std::lround(GetParam(kParamInputSource)->Value())
+  );
+
+  const int bounded = std::clamp(
+    raw,
+    0,
+    static_cast<int>(gs::InputSource::Count) - 1
+  );
+
+  return static_cast<gs::InputSource>(bounded);
+}
+
 void GitaSedap::OnReset()
 {
-  mCurrentOutputGain = dbToLinear(GetParam(kParamOutputDb)->Value());
-  mCurrentBypassMix = GetParam(kParamBypass)->Bool() ? 1.0 : 0.0;
+  const double sampleRate = std::max(GetSampleRate(), 8000.0);
+
+  mSourceAdapter.setSourceType(currentInputSource());
+  mSourceAdapter.prepare(sampleRate);
+
+  mOutputGain.prepare(sampleRate, 20.0);
+  mOutputGain.reset(dbToLinear(GetParam(kParamOutputDb)->Value()));
+
+  mBypassCrossfade.prepare(sampleRate, 5.0);
+  mBypassCrossfade.reset(GetParam(kParamBypass)->Bool());
 }
 
 void GitaSedap::ProcessBlock(sample** inputs, sample** outputs, int nFrames)
@@ -171,26 +194,23 @@ void GitaSedap::ProcessBlock(sample** inputs, sample** outputs, int nFrames)
     return;
   }
 
-  const double targetOutputGain = dbToLinear(GetParam(kParamOutputDb)->Value());
-  const double targetBypassMix = GetParam(kParamBypass)->Bool() ? 1.0 : 0.0;
+  mSourceAdapter.setSourceType(currentInputSource());
+  mOutputGain.setTarget(dbToLinear(GetParam(kParamOutputDb)->Value()));
+  mBypassCrossfade.setBypassed(GetParam(kParamBypass)->Bool());
 
-  const double inverseFrames = 1.0 / static_cast<double>(nFrames);
-  const double outputGainStep =
-    (targetOutputGain - mCurrentOutputGain) * inverseFrames;
-  const double bypassStep =
-    (targetBypassMix - mCurrentBypassMix) * inverseFrames;
+  mSourceAdapter.beginBlock();
 
   const sample* const monoInput = inputs[0];
 
   for(int frame = 0; frame < nFrames; ++frame)
   {
-    mCurrentOutputGain += outputGainStep;
-    mCurrentBypassMix += bypassStep;
-
     const double dry = static_cast<double>(monoInput[frame]);
-    const double processed = dry * mCurrentOutputGain;
+
+    const double conditioned = mSourceAdapter.processSample(dry);
+    const double wet = conditioned * mOutputGain.next();
+
     const sample value = static_cast<sample>(
-      processed + ((dry - processed) * mCurrentBypassMix)
+      mBypassCrossfade.process(dry, wet)
     );
 
     for(int channel = 0; channel < outputChannels; ++channel)
@@ -200,8 +220,6 @@ void GitaSedap::ProcessBlock(sample** inputs, sample** outputs, int nFrames)
     }
   }
 
-  // Snap to exact targets to avoid accumulated floating-point drift.
-  mCurrentOutputGain = targetOutputGain;
-  mCurrentBypassMix = targetBypassMix;
+  (void) mSourceAdapter.endBlock();
 }
 #endif

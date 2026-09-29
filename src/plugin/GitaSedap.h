@@ -3,8 +3,11 @@
 #include "IPlug_include_in_plug_hdr.h"
 #include "core/ParameterSpec.h"
 #include "core/StateSchema.h"
+#include "dsp/SourceAdapter.h"
+#include "dsp/Smoothing.h"
 
 namespace gs = gitasedap::core;
+namespace gsdsp = gitasedap::dsp;
 
 constexpr int kNumPresets = 1;
 
@@ -47,9 +50,10 @@ public:
 private:
 #if IPLUG_DSP
   [[nodiscard]] static double dbToLinear(double db) noexcept;
+  [[nodiscard]] gs::InputSource currentInputSource() const noexcept;
 
-  // Realtime-owned scalar state only. No allocation or locking in ProcessBlock.
-  double mCurrentOutputGain{1.0};
-  double mCurrentBypassMix{0.0};
+  gsdsp::SourceAdapter mSourceAdapter;
+  gsdsp::LinearSmoother mOutputGain;
+  gsdsp::BypassCrossfade mBypassCrossfade;
 #endif
 };
