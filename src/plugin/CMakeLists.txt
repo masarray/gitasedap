@@ -13,6 +13,7 @@ target_link_libraries(
   PRIVATE
     gitasedap_core
     gitasedap_dsp
+    gitasedap_runtime
 )
 
 target_include_directories(
