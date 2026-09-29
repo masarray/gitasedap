@@ -3,6 +3,7 @@ find_package(Threads REQUIRED)
 add_library(
   gitasedap_runtime
   STATIC
+    BodyProfileRuntime.cpp
     BoundedWorkerPool.cpp
 )
 
@@ -10,6 +11,7 @@ target_link_libraries(
   gitasedap_runtime
   PUBLIC
     gitasedap_core
+    gitasedap_dsp
   PRIVATE
     Threads::Threads
 )
