@@ -134,7 +134,6 @@ namespace
 
 [[nodiscard]] gslab::AudioBuffer processSourceAdapter(
   const gslab::AudioBuffer& input,
-  double sampleRate,
   gsdsp::SourceAdapter& adapter
 )
 {
@@ -393,7 +392,6 @@ int commandSourceDemo(int argc, char** argv)
 
   auto processed = processSourceAdapter(
     input,
-    sampleRate,
     adapter
   );
 
