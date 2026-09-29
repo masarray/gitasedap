@@ -13,8 +13,6 @@ concurrency:
 jobs:
   windows-vst3:
     name: Windows VST3 / Release
-    # Pin the runner generation. "windows-latest" can change Visual Studio
-    # underneath a previously verified CMake preset.
     runs-on: windows-2022
     timeout-minutes: 45
 
@@ -34,8 +32,38 @@ jobs:
       - name: Build
         run: cmake --build --preset windows-x64-release
 
-      - name: Test core invariants
+      - name: Test core and DSP laboratory
         run: ctest --preset windows-x64-release
+
+      - name: Produce P2 DSP laboratory evidence
+        shell: pwsh
+        run: |
+          $lab = Get-ChildItem -Path out/build/windows-x64 -Recurse -File -Filter gitasedap_dsp_lab.exe |
+            Select-Object -First 1
+
+          if (-not $lab) {
+            throw "gitasedap_dsp_lab.exe was not produced."
+          }
+
+          New-Item -ItemType Directory -Force -Path out/p2-evidence | Out-Null
+
+          & $lab.FullName generate impulse out/p2-evidence/impulse_48k.wav 48000 48000
+          if ($LASTEXITCODE -ne 0) { throw "DSP lab impulse generation failed." }
+
+          & $lab.FullName generate sweep out/p2-evidence/sweep_20_20k_48k.wav 48000 48000
+          if ($LASTEXITCODE -ne 0) { throw "DSP lab sweep generation failed." }
+
+          & $lab.FullName inspect out/p2-evidence/sweep_20_20k_48k.wav |
+            Out-File -Encoding utf8 out/p2-evidence/sweep_inspect.txt
+          if ($LASTEXITCODE -ne 0) { throw "DSP lab WAV inspection failed." }
+
+          & $lab.FullName compare out/p2-evidence/sweep_20_20k_48k.wav out/p2-evidence/sweep_20_20k_48k.wav |
+            Out-File -Encoding utf8 out/p2-evidence/golden_self_compare.txt
+          if ($LASTEXITCODE -ne 0) { throw "DSP lab golden comparison smoke failed." }
+
+          & $lab.FullName benchmark 48000 64 5000 |
+            Out-File -Encoding utf8 out/p2-evidence/benchmark_48k_64.txt
+          if ($LASTEXITCODE -ne 0) { throw "DSP lab benchmark smoke failed." }
 
       - name: Configure official VST3 validator
         shell: pwsh
@@ -70,12 +98,6 @@ jobs:
             throw "GitaSedap.vst3 was not produced by the build."
           }
 
-          Write-Host "Validator: $($validator.FullName)"
-          Write-Host "Plugin:    $($plugin.FullName)"
-
-          # Default mode validates one shared instance. Local-instance mode
-          # creates a fresh plug-in instance per test and exercises lifecycle
-          # construction/destruction more aggressively.
           & $validator.FullName $plugin.FullName
           if ($LASTEXITCODE -ne 0) {
             throw "VST3 validator failed in default instance mode."
@@ -104,5 +126,13 @@ jobs:
         with:
           name: GitaSedap-Windows-VST3-${{ github.sha }}
           path: out/artifact/GitaSedap.vst3
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload P2 DSP laboratory evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: GitaSedap-P2-DSP-Lab-${{ github.sha }}
+          path: out/p2-evidence
           if-no-files-found: error
           retention-days: 14

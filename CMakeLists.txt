@@ -14,6 +14,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(GITASEDAP_BUILD_PLUGIN "Build the VST3 plug-in target" ON)
 option(GITASEDAP_BUILD_TESTS "Build unit and invariant tests" ON)
+option(GITASEDAP_BUILD_TOOLS "Build offline DSP laboratory tools" ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(Warnings)
@@ -27,10 +28,15 @@ target_include_directories(
 target_compile_features(gitasedap_core INTERFACE cxx_std_20)
 
 add_subdirectory(src/runtime)
+add_subdirectory(src/lab)
 
 if(GITASEDAP_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
+endif()
+
+if(GITASEDAP_BUILD_TOOLS)
+  add_subdirectory(tools/dsp-lab)
 endif()
 
 if(GITASEDAP_BUILD_PLUGIN)
