@@ -10,6 +10,7 @@
 #include <cmath>
 #include <cstddef>
 #include <limits>
+#include <numbers>
 
 namespace gs = gitasedap::core;
 namespace gsdsp = gitasedap::dsp;
