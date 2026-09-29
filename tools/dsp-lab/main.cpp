@@ -11,6 +11,7 @@
 #include "lab/WavFile.h"
 
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <cmath>
 #include <cstddef>
