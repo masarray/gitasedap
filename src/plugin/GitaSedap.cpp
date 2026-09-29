@@ -68,6 +68,18 @@ GitaSedap::GitaSedap(const InstanceInfo& info)
   mLayoutFunc = [&](IGraphics* pGraphics) {
     pGraphics->AttachCornerResizer(EUIResizerMode::Scale, false);
 
+    // iPlug2's default text style references the "Roboto-Regular" font ID.
+    // P1/P3 did not register a font, so vector/text controls rendered their
+    // geometry while every label/value silently disappeared. Use a native
+    // Windows UI font first (no packaged font asset), then fall back to Arial.
+    // The alias keeps DEFAULT_FONT and all existing IVStyle/IText instances
+    // consistent without duplicating font identifiers throughout the layout.
+    if(!pGraphics->LoadFont(DEFAULT_FONT, "Segoe UI", ETextStyle::Normal))
+      (void) pGraphics->LoadFont(DEFAULT_FONT, "Arial", ETextStyle::Normal);
+
+    pGraphics->EnableMouseOver(true);
+    pGraphics->AttachTextEntryControl();
+
     const IColor shell{255, 28, 31, 35};
     const IColor panel{255, 37, 41, 46};
     const IColor panelRaised{255, 45, 49, 55};
