@@ -457,18 +457,35 @@ void GitaSedap::OnReset()
   mSourceAdapter.setSourceType(currentInputSource());
   mSourceAdapter.prepare(sampleRate);
 
-  mBodyEngine.prepare(
+  mBodyRuntime.shutdownAfterAudioStopped();
+
+  mBodyRuntime.prepare(
     sampleRate,
     std::clamp(GetParam(kParamBody)->Value() / 100.0, 0.0, 1.0)
   );
 
-  const auto bodyProfile = gsdsp::compileBodyProfile(
-    gsdsp::naturalDevelopmentProfile(),
-    sampleRate
-  );
+  const auto profileRequest =
+    mBodyRuntime.beginProfileRequest();
 
-  if(bodyProfile.ok())
-    mBodyEngine.configure(bodyProfile.prepared);
+  gsdsp::BodyProfileCompileError profileError{};
+
+  auto preparedProfile =
+    gsruntime::BodyProfileRuntime::prepareProfile(
+      profileRequest,
+      gsdsp::naturalDevelopmentProfile(),
+      sampleRate,
+      &profileError
+    );
+
+  if(
+    profileError == gsdsp::BodyProfileCompileError::None
+    && preparedProfile
+  )
+  {
+    (void) mBodyRuntime.publish(
+      std::move(preparedProfile)
+    );
+  }
 
   mOutputGain.prepare(sampleRate, 20.0);
   mOutputGain.reset(dbToLinear(GetParam(kParamOutputDb)->Value()));
@@ -499,7 +516,10 @@ void GitaSedap::ProcessBlock(sample** inputs, sample** outputs, int nFrames)
   }
 
   mSourceAdapter.setSourceType(currentInputSource());
-  mBodyEngine.setBodyAmountNormalized(
+
+  mBodyRuntime.beginAudioBlock();
+
+  mBodyRuntime.setBodyAmountNormalized(
     std::clamp(GetParam(kParamBody)->Value() / 100.0, 0.0, 1.0)
   );
   mOutputGain.setTarget(dbToLinear(GetParam(kParamOutputDb)->Value()));
@@ -514,7 +534,7 @@ void GitaSedap::ProcessBlock(sample** inputs, sample** outputs, int nFrames)
     const double dry = static_cast<double>(monoInput[frame]);
 
     const double conditioned = mSourceAdapter.processSample(dry);
-    const double bodied = mBodyEngine.processSample(conditioned);
+    const double bodied = mBodyRuntime.processSample(conditioned);
     const double wet = bodied * mOutputGain.next();
 
     const sample value = static_cast<sample>(
