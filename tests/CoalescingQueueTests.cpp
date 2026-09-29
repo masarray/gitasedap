@@ -17,16 +17,21 @@ int main()
   );
 
   GS_REQUIRE(
+    queue.pushOrReplace(2, "second-key")
+    == Queue::PushResult::Inserted
+  );
+
+  GS_REQUIRE(queue.size() == 2);
+
+  // Replacing an existing key coalesces the payload and refreshes its
+  // sequence without consuming another queue slot. Key 2 therefore becomes
+  // the oldest pending request.
+  GS_REQUIRE(
     queue.pushOrReplace(1, "new")
     == Queue::PushResult::Replaced
   );
 
-  GS_REQUIRE(queue.size() == 1);
-
-  GS_REQUIRE(
-    queue.pushOrReplace(2, "second-key")
-    == Queue::PushResult::Inserted
-  );
+  GS_REQUIRE(queue.size() == 2);
 
   GS_REQUIRE(
     queue.pushOrReplace(3, "must-not-grow")
@@ -35,7 +40,6 @@ int main()
 
   auto oldest = queue.tryPopOldest();
   GS_REQUIRE(oldest.has_value());
-
   GS_REQUIRE(oldest->key == 2);
   GS_REQUIRE(oldest->value == "second-key");
 
