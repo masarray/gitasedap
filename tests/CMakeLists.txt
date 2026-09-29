@@ -277,3 +277,26 @@ add_test(
   NAME gitasedap.hybrid_body_engine
   COMMAND gitasedap_hybrid_body_engine_tests
 )
+
+add_executable(
+  gitasedap_body_profile_runtime_tests
+  BodyProfileRuntimeTests.cpp
+)
+
+target_link_libraries(
+  gitasedap_body_profile_runtime_tests
+  PRIVATE
+    gitasedap_runtime
+)
+
+target_compile_features(
+  gitasedap_body_profile_runtime_tests
+  PRIVATE
+    cxx_std_20
+)
+gitasedap_enable_project_warnings(gitasedap_body_profile_runtime_tests)
+
+add_test(
+  NAME gitasedap.body_profile_runtime
+  COMMAND gitasedap_body_profile_runtime_tests
+)
