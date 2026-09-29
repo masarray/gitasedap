@@ -12,6 +12,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# iPlug2's Windows targets use the static MSVC runtime. Keep every in-project
+# static library/test/tool on the same runtime so DSP libraries can be linked
+# into both the VST3 and laboratory executables without CRT mismatches.
+if(MSVC)
+  set(
+    CMAKE_MSVC_RUNTIME_LIBRARY
+    "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+  )
+endif()
+
 option(GITASEDAP_BUILD_PLUGIN "Build the VST3 plug-in target" ON)
 option(GITASEDAP_BUILD_TESTS "Build unit and invariant tests" ON)
 option(GITASEDAP_BUILD_TOOLS "Build offline DSP laboratory tools" ON)
@@ -27,6 +37,7 @@ target_include_directories(
 )
 target_compile_features(gitasedap_core INTERFACE cxx_std_20)
 
+add_subdirectory(src/dsp)
 add_subdirectory(src/runtime)
 add_subdirectory(src/lab)
 

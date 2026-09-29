@@ -199,3 +199,42 @@ add_test(
   NAME gitasedap.signal_generator
   COMMAND gitasedap_signal_generator_tests
 )
+
+add_executable(
+  gitasedap_source_adapter_tests
+  SourceAdapterTests.cpp
+)
+
+target_link_libraries(
+  gitasedap_source_adapter_tests
+  PRIVATE
+    gitasedap_dsp
+    gitasedap_lab
+)
+
+target_compile_features(gitasedap_source_adapter_tests PRIVATE cxx_std_20)
+gitasedap_enable_project_warnings(gitasedap_source_adapter_tests)
+
+add_test(
+  NAME gitasedap.source_adapter
+  COMMAND gitasedap_source_adapter_tests
+)
+
+add_executable(
+  gitasedap_smoothing_tests
+  SmoothingTests.cpp
+)
+
+target_link_libraries(
+  gitasedap_smoothing_tests
+  PRIVATE
+    gitasedap_dsp
+)
+
+target_compile_features(gitasedap_smoothing_tests PRIVATE cxx_std_20)
+gitasedap_enable_project_warnings(gitasedap_smoothing_tests)
+
+add_test(
+  NAME gitasedap.smoothing
+  COMMAND gitasedap_smoothing_tests
+)
