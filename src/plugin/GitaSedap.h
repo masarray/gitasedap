@@ -4,12 +4,13 @@
 #include "core/ParameterSpec.h"
 #include "core/StateSchema.h"
 #include "dsp/BodyProfileCompiler.h"
-#include "dsp/HybridBodyEngine.h"
 #include "dsp/SourceAdapter.h"
+#include "runtime/BodyProfileRuntime.h"
 #include "dsp/Smoothing.h"
 
 namespace gs = gitasedap::core;
 namespace gsdsp = gitasedap::dsp;
+namespace gsruntime = gitasedap::runtime;
 
 constexpr int kNumPresets = 1;
 
@@ -55,7 +56,7 @@ private:
   [[nodiscard]] gs::InputSource currentInputSource() const noexcept;
 
   gsdsp::SourceAdapter mSourceAdapter;
-  gsdsp::HybridBodyEngine mBodyEngine;
+  gsruntime::BodyProfileRuntime mBodyRuntime;
   gsdsp::LinearSmoother mOutputGain;
   gsdsp::BypassCrossfade mBypassCrossfade;
 #endif

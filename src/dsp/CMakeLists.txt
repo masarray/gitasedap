@@ -3,6 +3,7 @@ add_library(
   STATIC
     BodyProfile.cpp
     BodyProfileCompiler.cpp
+    CrossfadingBodyEngine.cpp
     HybridBodyEngine.cpp
     SourceAdapter.cpp
 )
