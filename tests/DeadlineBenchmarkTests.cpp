@@ -1,6 +1,6 @@
+#include "TestSupport.h"
 #include "lab/DeadlineBenchmark.h"
 
-#include <cassert>
 #include <vector>
 
 namespace gslab = gitasedap::lab;
@@ -28,14 +28,14 @@ int main()
     }
   );
 
-  assert(result.iterations == 128);
-  assert(result.deadlineMicroseconds > 1000.0);
-  assert(result.meanMicroseconds >= 0.0);
-  assert(result.p95Microseconds <= result.maximumMicroseconds);
-  assert(result.p99Microseconds <= result.maximumMicroseconds);
-  assert(result.p999Microseconds <= result.maximumMicroseconds);
-  assert(result.p99DeadlineRatio >= 0.0);
-  assert(sink >= 0.0F);
+  GS_REQUIRE(result.iterations == 128);
+  GS_REQUIRE(result.deadlineMicroseconds > 1000.0);
+  GS_REQUIRE(result.meanMicroseconds >= 0.0);
+  GS_REQUIRE(result.p95Microseconds <= result.maximumMicroseconds);
+  GS_REQUIRE(result.p99Microseconds <= result.maximumMicroseconds);
+  GS_REQUIRE(result.p999Microseconds <= result.maximumMicroseconds);
+  GS_REQUIRE(result.p99DeadlineRatio >= 0.0);
+  GS_REQUIRE(sink >= 0.0F);
 
   return 0;
 }

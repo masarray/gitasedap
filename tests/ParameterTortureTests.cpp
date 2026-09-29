@@ -1,7 +1,8 @@
+#include "TestSupport.h"
 #include "lab/ParameterTorture.h"
 
-#include <cassert>
 #include <cstddef>
+#include <cstdint>
 
 namespace gslab = gitasedap::lab;
 
@@ -21,8 +22,8 @@ int main()
     0xD00DFEEDULL
   );
 
-  assert(first == second);
-  assert(first.size() == 5000);
+  GS_REQUIRE(first == second);
+  GS_REQUIRE(first.size() == 5000);
 
   std::uint64_t previousOffset = 0;
 
@@ -30,18 +31,18 @@ int main()
   {
     const auto& event = first[index];
 
-    assert(event.parameterIndex < 6);
-    assert(event.sampleOffset < (48000U * 10U));
-    assert(event.normalizedValue >= 0.0);
-    assert(event.normalizedValue <= 1.0);
+    GS_REQUIRE(event.parameterIndex < 6);
+    GS_REQUIRE(event.sampleOffset < (48000U * 10U));
+    GS_REQUIRE(event.normalizedValue >= 0.0);
+    GS_REQUIRE(event.normalizedValue <= 1.0);
 
     if(index > 0)
-      assert(event.sampleOffset >= previousOffset);
+      GS_REQUIRE(event.sampleOffset >= previousOffset);
 
     previousOffset = event.sampleOffset;
   }
 
-  assert(first != gslab::ParameterTorture::generate(
+  GS_REQUIRE(first != gslab::ParameterTorture::generate(
     6,
     48000U * 10U,
     5000,

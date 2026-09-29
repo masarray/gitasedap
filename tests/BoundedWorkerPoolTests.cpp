@@ -1,7 +1,7 @@
+#include "TestSupport.h"
 #include "runtime/BoundedWorkerPool.h"
 
 #include <atomic>
-#include <cassert>
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
@@ -35,7 +35,7 @@ int main()
     }
   );
 
-  assert(firstResult == gsr::BoundedWorkerPool::SubmitResult::Accepted);
+  GS_REQUIRE(firstResult == gsr::BoundedWorkerPool::SubmitResult::Accepted);
 
   while(!firstStarted.load(std::memory_order_acquire))
     std::this_thread::yield();
@@ -49,13 +49,13 @@ int main()
     cancelledSource.token()
   );
 
-  assert(secondResult == gsr::BoundedWorkerPool::SubmitResult::Accepted);
+  GS_REQUIRE(secondResult == gsr::BoundedWorkerPool::SubmitResult::Accepted);
 
   const auto overflowResult = pool.trySubmit(
     [](const gsr::WorkerTaskContext&) {}
   );
 
-  assert(overflowResult == gsr::BoundedWorkerPool::SubmitResult::QueueFull);
+  GS_REQUIRE(overflowResult == gsr::BoundedWorkerPool::SubmitResult::QueueFull);
 
   cancelledSource.cancel();
 
@@ -65,13 +65,11 @@ int main()
   }
   gateCv.notify_all();
 
-  assert(pool.waitUntilIdleFor(2s));
-  assert(cancelledTaskExecutions.load(std::memory_order_relaxed) == 0);
-  assert(pool.unhandledExceptionCount() == 0);
+  GS_REQUIRE(pool.waitUntilIdleFor(2s));
+  GS_REQUIRE(cancelledTaskExecutions.load(std::memory_order_relaxed) == 0);
+  GS_REQUIRE(pool.unhandledExceptionCount() == 0);
 
-  // Exceptions do not kill worker threads or escape into the host/control
-  // thread. They are surfaced through a bounded diagnostic counter.
-  assert(
+  GS_REQUIRE(
     pool.trySubmit(
       [](const gsr::WorkerTaskContext&) {
         throw 7;
@@ -80,12 +78,12 @@ int main()
     == gsr::BoundedWorkerPool::SubmitResult::Accepted
   );
 
-  assert(pool.waitUntilIdleFor(2s));
-  assert(pool.unhandledExceptionCount() == 1);
+  GS_REQUIRE(pool.waitUntilIdleFor(2s));
+  GS_REQUIRE(pool.unhandledExceptionCount() == 1);
 
   pool.shutdown();
 
-  assert(
+  GS_REQUIRE(
     pool.trySubmit([](const gsr::WorkerTaskContext&) {})
     == gsr::BoundedWorkerPool::SubmitResult::Stopped
   );

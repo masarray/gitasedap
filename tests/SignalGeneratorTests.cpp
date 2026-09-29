@@ -1,7 +1,7 @@
+#include "TestSupport.h"
 #include "lab/GoldenCompare.h"
 #include "lab/SignalGenerator.h"
 
-#include <cassert>
 #include <cmath>
 
 namespace gslab = gitasedap::lab;
@@ -10,9 +10,9 @@ int main()
 {
   const auto impulse = gslab::SignalGenerator::impulse(2, 128, 17, 0.75F);
 
-  assert(impulse.channel(0)[17] == 0.75F);
-  assert(impulse.channel(1)[17] == 0.75F);
-  assert(impulse.channel(0)[16] == 0.0F);
+  GS_REQUIRE(impulse.channel(0)[17] == 0.75F);
+  GS_REQUIRE(impulse.channel(1)[17] == 0.75F);
+  GS_REQUIRE(impulse.channel(0)[16] == 0.0F);
 
   const auto whiteA = gslab::SignalGenerator::whiteNoise(
     1,
@@ -25,7 +25,7 @@ int main()
     12345U
   );
 
-  assert(
+  GS_REQUIRE(
     gslab::compareGolden(
       whiteA,
       whiteB,
@@ -44,8 +44,8 @@ int main()
 
   for(const auto sample : sweep.channel(0))
   {
-    assert(std::isfinite(sample));
-    assert(std::abs(sample) <= 0.500001F);
+    GS_REQUIRE(std::isfinite(sample));
+    GS_REQUIRE(std::abs(sample) <= 0.500001F);
   }
 
   const auto pink = gslab::SignalGenerator::pinkNoise(
@@ -55,7 +55,7 @@ int main()
   );
 
   for(const auto sample : pink.channel(0))
-    assert(std::isfinite(sample));
+    GS_REQUIRE(std::isfinite(sample));
 
   return 0;
 }

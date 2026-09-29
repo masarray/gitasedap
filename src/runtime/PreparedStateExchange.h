@@ -15,12 +15,6 @@
 namespace gitasedap::runtime
 {
 
-// Control-plane -> realtime immutable-state handoff.
-//
-// The control plane owns every heap allocation. The audio thread only performs
-// a bounded number of atomic pointer operations once per block. Reclamation is
-// hazard-protected and happens only when drainReclaimable(), beginRequest(),
-// publish(), or shutdownAfterAudioStopped() runs on a non-realtime thread.
 template <typename State>
 class PreparedStateExchange
 {
@@ -81,10 +75,8 @@ public:
     const auto next = current + 1;
     mLatestRequested.store(next, std::memory_order_seq_cst);
 
-    // A not-yet-consumed state from an older request is no longer useful.
-    // Removing it here provides true latest-request coalescing.
     mPending.exchange(nullptr, std::memory_order_seq_cst);
-    reclaimLocked();
+    (void) reclaimLocked();
 
     return RequestToken{next};
   }
@@ -129,22 +121,12 @@ public:
     auto* raw = handle.get();
     mOwned.emplace_back(std::move(handle));
 
-    // Replacing pending is safe: the audio thread hazard-protects a candidate
-    // before it dereferences it. The displaced node remains owned until a
-    // control-plane reclamation pass proves it is neither pending, active,
-    // nor hazard-protected.
     mPending.exchange(raw, std::memory_order_seq_cst);
-    reclaimLocked();
+    (void) reclaimLocked();
 
     return PublishResult::Published;
   }
 
-  // Realtime safe. Call exactly once at an audio block boundary. The returned
-  // pointer stays valid until at least the next call from the same audio thread.
-  //
-  // No allocation, destruction, lock, wait, I/O, logging, or unbounded loop is
-  // performed. The retry loop only contends with structural publication, which
-  // is a low-rate control-plane event.
   [[nodiscard]] const State* acquireForAudioBlock() noexcept
   {
     for(;;)
@@ -157,11 +139,6 @@ public:
         return active ? &active->state : nullptr;
       }
 
-      // Standard hazard-pointer pattern:
-      // 1. publish candidate as hazard,
-      // 2. verify source still points to it,
-      // 3. claim it with CAS,
-      // 4. only then dereference/publish active.
       mHazard.store(candidate, std::memory_order_seq_cst);
 
       if(candidate != mPending.load(std::memory_order_seq_cst))
@@ -194,8 +171,6 @@ public:
     }
   }
 
-  // Control-plane only. Returns the number of immutable states destroyed by
-  // this pass. Destructors therefore never run on the audio callback.
   [[nodiscard]] std::size_t drainReclaimable()
   {
     std::lock_guard lock(mControlMutex);
@@ -218,7 +193,6 @@ public:
     return mOwned.size();
   }
 
-  // Must be called only after the host has stopped the audio callback.
   void shutdownAfterAudioStopped() noexcept
   {
     std::lock_guard lock(mControlMutex);

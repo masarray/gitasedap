@@ -1,6 +1,6 @@
+#include "TestSupport.h"
 #include "runtime/CoalescingQueue.h"
 
-#include <cassert>
 #include <string>
 
 namespace gsr = gitasedap::runtime;
@@ -11,42 +11,41 @@ int main()
 
   Queue queue;
 
-  assert(
+  GS_REQUIRE(
     queue.pushOrReplace(1, "old")
     == Queue::PushResult::Inserted
   );
 
-  assert(
+  GS_REQUIRE(
     queue.pushOrReplace(1, "new")
     == Queue::PushResult::Replaced
   );
 
-  assert(queue.size() == 1);
+  GS_REQUIRE(queue.size() == 1);
 
-  assert(
+  GS_REQUIRE(
     queue.pushOrReplace(2, "second-key")
     == Queue::PushResult::Inserted
   );
 
-  assert(
+  GS_REQUIRE(
     queue.pushOrReplace(3, "must-not-grow")
     == Queue::PushResult::Full
   );
 
   auto oldest = queue.tryPopOldest();
-  assert(oldest.has_value());
+  GS_REQUIRE(oldest.has_value());
 
-  // Replacing key 1 refreshes its sequence, so key 2 is now older.
-  assert(oldest->key == 2);
-  assert(oldest->value == "second-key");
+  GS_REQUIRE(oldest->key == 2);
+  GS_REQUIRE(oldest->value == "second-key");
 
   auto latest = queue.tryPopOldest();
-  assert(latest.has_value());
-  assert(latest->key == 1);
-  assert(latest->value == "new");
+  GS_REQUIRE(latest.has_value());
+  GS_REQUIRE(latest->key == 1);
+  GS_REQUIRE(latest->value == "new");
 
-  assert(queue.empty());
-  assert(!queue.tryPopOldest().has_value());
+  GS_REQUIRE(queue.empty());
+  GS_REQUIRE(!queue.tryPopOldest().has_value());
 
   return 0;
 }

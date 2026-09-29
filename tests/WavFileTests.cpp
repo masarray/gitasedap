@@ -1,8 +1,8 @@
+#include "TestSupport.h"
 #include "lab/GoldenCompare.h"
 #include "lab/SignalGenerator.h"
 #include "lab/WavFile.h"
 
-#include <cassert>
 #include <filesystem>
 #include <system_error>
 
@@ -24,7 +24,7 @@ int main()
   gslab::WavFile::writeFloat32(path, 48000U, source);
   const auto loaded = gslab::WavFile::read(path);
 
-  assert(loaded.sampleRate == 48000U);
+  GS_REQUIRE(loaded.sampleRate == 48000U);
 
   const auto result = gslab::compareGolden(
     source,
@@ -32,7 +32,7 @@ int main()
     gslab::GoldenTolerance{0.0, 0.0}
   );
 
-  assert(result.passed());
+  GS_REQUIRE(result.passed());
 
   std::error_code error;
   std::filesystem::remove(path, error);

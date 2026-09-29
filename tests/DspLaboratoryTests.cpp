@@ -1,9 +1,9 @@
+#include "TestSupport.h"
 #include "lab/FiniteAudioGuard.h"
 #include "lab/GoldenCompare.h"
 #include "lab/OfflineRenderer.h"
 #include "lab/SignalGenerator.h"
 
-#include <cassert>
 #include <cstddef>
 #include <limits>
 
@@ -24,6 +24,7 @@ public:
   {
     mPreparedChannels = spec.channelCount;
     mPreparedMaximumBlock = spec.maximumBlockSize;
+    mContractValid = true;
   }
 
   void reset() noexcept override
@@ -36,8 +37,14 @@ public:
     std::size_t frameCount
   ) noexcept override
   {
-    assert(channelCount == mPreparedChannels);
-    assert(frameCount <= mPreparedMaximumBlock);
+    if(
+      channelCount != mPreparedChannels
+      || frameCount > mPreparedMaximumBlock
+    )
+    {
+      mContractValid = false;
+      return;
+    }
 
     for(std::size_t channel = 0; channel < channelCount; ++channel)
     {
@@ -46,10 +53,16 @@ public:
     }
   }
 
+  [[nodiscard]] bool contractValid() const noexcept
+  {
+    return mContractValid;
+  }
+
 private:
   float mGain{1.0F};
   std::size_t mPreparedChannels{0};
   std::size_t mPreparedMaximumBlock{0};
+  bool mContractValid{true};
 };
 
 } // namespace
@@ -81,26 +94,29 @@ int main()
     gslab::RenderOptions{127, true}
   );
 
+  GS_REQUIRE(gainA.contractValid());
+  GS_REQUIRE(gainB.contractValid());
+
   const auto blockInvariant = gslab::compareGolden(
     render64,
     render127,
     gslab::GoldenTolerance{0.0, 0.0}
   );
 
-  assert(blockInvariant.passed());
+  GS_REQUIRE(blockInvariant.passed());
 
   const auto report = gslab::analyzeFiniteAudio(render64);
-  assert(report.allFinite());
-  assert(report.peakAbsolute <= 0.200001);
+  GS_REQUIRE(report.allFinite());
+  GS_REQUIRE(report.peakAbsolute <= 0.200001);
 
   auto corrupt = render64;
   corrupt.channel(1)[12] = std::numeric_limits<float>::infinity();
 
   const auto corruptReport = gslab::analyzeFiniteAudio(corrupt);
-  assert(!corruptReport.allFinite());
-  assert(corruptReport.nonFiniteCount == 1);
-  assert(corruptReport.firstNonFiniteChannel == 1);
-  assert(corruptReport.firstNonFiniteFrame == 12);
+  GS_REQUIRE(!corruptReport.allFinite());
+  GS_REQUIRE(corruptReport.nonFiniteCount == 1);
+  GS_REQUIRE(corruptReport.firstNonFiniteChannel == 1);
+  GS_REQUIRE(corruptReport.firstNonFiniteFrame == 12);
 
   const auto mismatch = gslab::compareGolden(
     render64,
@@ -108,8 +124,8 @@ int main()
     gslab::GoldenTolerance{1.0e-7, 0.0}
   );
 
-  assert(!mismatch.passed());
-  assert(mismatch.mismatchedSamples == 1);
+  GS_REQUIRE(!mismatch.passed());
+  GS_REQUIRE(mismatch.mismatchedSamples == 1);
 
   return 0;
 }
