@@ -2,8 +2,9 @@
 #include "IPlug_include_in_plug_src.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
-#include <utility>
+#include <span>
 
 #if IPLUG_EDITOR
 #include "IControls.h"
@@ -49,10 +50,29 @@ GitaSedap::GitaSedap(const InstanceInfo& info)
   );
 
   GetParam(kParamBypass)->InitBool("Bypass", false);
+
   GetParam(kParamInputSource)->InitEnum(
     "Input Source",
     static_cast<int>(gs::InputSource::ActivePiezo),
     {"Active Piezo", "Passive Piezo", "Magnetic"}
+  );
+
+  GetParam(kParamBodyProfileA)->InitEnum(
+    "Body Profile A",
+    static_cast<int>(gs::BodyProfileChoice::NaturalDevelopment),
+    {"Raw / P3", "Natural Development", "Dreadnought Development"}
+  );
+
+  GetParam(kParamBodyProfileB)->InitEnum(
+    "Body Profile B",
+    static_cast<int>(gs::BodyProfileChoice::DreadnoughtDevelopment),
+    {"Raw / P3", "Natural Development", "Dreadnought Development"}
+  );
+
+  GetParam(kParamBodyCompareSlot)->InitEnum(
+    "Body Compare Slot",
+    static_cast<int>(gs::BodyCompareSlot::A),
+    {"A", "B"}
   );
 
 #if IPLUG_EDITOR
@@ -69,12 +89,6 @@ GitaSedap::GitaSedap(const InstanceInfo& info)
   mLayoutFunc = [&](IGraphics* pGraphics) {
     pGraphics->AttachCornerResizer(EUIResizerMode::Scale, false);
 
-    // iPlug2's default text style references the "Roboto-Regular" font ID.
-    // P1/P3 did not register a font, so vector/text controls rendered their
-    // geometry while every label/value silently disappeared. Use a native
-    // Windows UI font first (no packaged font asset), then fall back to Arial.
-    // The alias keeps DEFAULT_FONT and all existing IVStyle/IText instances
-    // consistent without duplicating font identifiers throughout the layout.
     if(!pGraphics->LoadFont(DEFAULT_FONT, "Segoe UI", ETextStyle::Normal))
       (void) pGraphics->LoadFont(DEFAULT_FONT, "Arial", ETextStyle::Normal);
 
@@ -130,7 +144,7 @@ GitaSedap::GitaSedap(const InstanceInfo& info)
       .WithWidgetFrac(0.62f)
       .WithColor(kPR, accentSoft);
 
-    const IVStyle sourceStyle = DEFAULT_STYLE
+    const IVStyle segmentedStyle = DEFAULT_STYLE
       .WithShowLabel(false)
       .WithShowValue(false)
       .WithDrawFrame(true)
@@ -143,8 +157,12 @@ GitaSedap::GitaSedap(const InstanceInfo& info)
       .WithColor(kFR, line)
       .WithColor(kHL, accentSoft)
       .WithColor(kSH, shadow)
-      .WithLabelText(IText(11.f, textSecondary))
-      .WithValueText(IText(11.f, textPrimary));
+      .WithLabelText(IText(10.f, textSecondary))
+      .WithValueText(IText(10.f, textPrimary));
+
+    const IVStyle listenStyle = segmentedStyle
+      .WithColor(kPR, accentSoft)
+      .WithValueText(IText(12.f, textPrimary));
 
     const IVStyle bypassStyle = DEFAULT_STYLE
       .WithShowLabel(true)
@@ -174,6 +192,13 @@ GitaSedap::GitaSedap(const InstanceInfo& info)
       outer.T + 54.f
     );
 
+    const IRECT profilePanel(
+      outer.L,
+      header.B + 10.f,
+      outer.R,
+      header.B + 102.f
+    );
+
     const IRECT footer(
       outer.L,
       outer.B - 88.f,
@@ -183,13 +208,16 @@ GitaSedap::GitaSedap(const InstanceInfo& info)
 
     const IRECT main(
       outer.L,
-      header.B + 10.f,
+      profilePanel.B + 10.f,
       outer.R,
       footer.T - 10.f
     );
 
     pGraphics->AttachControl(
       new IVPanelControl(header, "", headerStyle)
+    );
+    pGraphics->AttachControl(
+      new IVPanelControl(profilePanel, "", sectionStyle)
     );
     pGraphics->AttachControl(
       new IVPanelControl(main, "", sectionStyle)
@@ -206,7 +234,7 @@ GitaSedap::GitaSedap(const InstanceInfo& info)
     );
 
     const IRECT phase(
-      header.R - 235.f,
+      header.R - 300.f,
       header.T + 10.f,
       header.R - 18.f,
       header.B - 10.f
@@ -231,13 +259,126 @@ GitaSedap::GitaSedap(const InstanceInfo& info)
     pGraphics->AttachControl(
       new ITextControl(
         phase,
-        "P4A  •  HYBRID BODY CORE  •  ZERO LATENCY",
+        "P4C  •  LEVEL-MATCHED BODY A/B  •  ZERO LATENCY",
         IText(10.f, accentSoft, nullptr, EAlign::Far)
+      )
+    );
+
+    pGraphics->AttachControl(
+      new ITextControl(
+        IRECT(
+          profilePanel.L + 16.f,
+          profilePanel.T + 7.f,
+          profilePanel.R - 16.f,
+          profilePanel.T + 23.f
+        ),
+        "BODY PROFILE  •  QUICK COMPARE",
+        IText(10.f, textSecondary, nullptr, EAlign::Near)
+      )
+    );
+
+    const float compareWidth = 112.f;
+    const float gap = 10.f;
+    const float selectorWidth =
+      (
+        profilePanel.W()
+        - 28.f
+        - compareWidth
+        - (gap * 2.f)
+      ) * 0.5f;
+
+    const IRECT profileA(
+      profilePanel.L + 14.f,
+      profilePanel.T + 29.f,
+      profilePanel.L + 14.f + selectorWidth,
+      profilePanel.B - 11.f
+    );
+
+    const IRECT profileB(
+      profileA.R + gap,
+      profileA.T,
+      profileA.R + gap + selectorWidth,
+      profileA.B
+    );
+
+    const IRECT listenArea(
+      profileB.R + gap,
+      profileA.T,
+      profilePanel.R - 14.f,
+      profileA.B
+    );
+
+    pGraphics->AttachControl(
+      new ITextControl(
+        profileA.GetFromTop(16.f),
+        "A PROFILE",
+        IText(9.f, textSecondary, nullptr, EAlign::Near)
+      )
+    );
+
+    pGraphics->AttachControl(
+      new ITextControl(
+        profileB.GetFromTop(16.f),
+        "B PROFILE",
+        IText(9.f, textSecondary, nullptr, EAlign::Near)
+      )
+    );
+
+    pGraphics->AttachControl(
+      new ITextControl(
+        listenArea.GetFromTop(16.f),
+        "LISTEN",
+        IText(9.f, textSecondary)
+      )
+    );
+
+    const std::vector<const char*> profileLabels{
+      "RAW",
+      "NATURAL",
+      "DREAD"
+    };
+
+    pGraphics->AttachControl(
+      new IVTabSwitchControl(
+        profileA.GetFromBottom(39.f),
+        kParamBodyProfileA,
+        profileLabels,
+        "",
+        segmentedStyle,
+        EVShape::Rectangle,
+        EDirection::Horizontal
+      )
+    );
+
+    pGraphics->AttachControl(
+      new IVTabSwitchControl(
+        profileB.GetFromBottom(39.f),
+        kParamBodyProfileB,
+        profileLabels,
+        "",
+        segmentedStyle,
+        EVShape::Rectangle,
+        EDirection::Horizontal
+      )
+    );
+
+    const std::vector<const char*> compareLabels{"A", "B"};
+
+    pGraphics->AttachControl(
+      new IVTabSwitchControl(
+        listenArea.GetFromBottom(39.f),
+        kParamBodyCompareSlot,
+        compareLabels,
+        "",
+        listenStyle,
+        EVShape::Rectangle,
+        EDirection::Horizontal
       )
     );
 
     const float mainWidth = main.W();
     const float primaryAreaWidth = mainWidth * 0.77f;
+
     const IRECT primaryArea(
       main.L + 14.f,
       main.T + 12.f,
@@ -381,7 +522,7 @@ GitaSedap::GitaSedap(const InstanceInfo& info)
         kParamInputSource,
         sourceLabels,
         "",
-        sourceStyle,
+        segmentedStyle,
         EVShape::Rectangle,
         EDirection::Horizontal
       )
@@ -418,16 +559,63 @@ bool GitaSedap::SerializeState(IByteChunk& chunk) const
 int GitaSedap::UnserializeState(const IByteChunk& chunk, int startPos)
 {
   gs::state::HeaderBytes header{};
-  const int payloadPos = chunk.GetBytes(
+
+  int position = chunk.GetBytes(
     header.data(),
     static_cast<int>(header.size()),
     startPos
   );
 
-  if(payloadPos < 0 || !gs::state::isSupportedHeader(header))
+  if(position < 0 || !gs::state::isSupportedHeader(header))
     return -1;
 
-  return UnserializeParams(chunk, payloadPos);
+  const auto decoded = gs::state::decodeHeader(header);
+  const auto serializedCount =
+    gs::state::serializedParameterCount(decoded.version);
+
+  if(
+    serializedCount == 0
+    || serializedCount > gs::parameterCount()
+  )
+  {
+    return -1;
+  }
+
+  std::array<double, gs::parameterCount()> serialized{};
+
+  for(std::size_t index = 0; index < serializedCount; ++index)
+  {
+    position = chunk.Get(&serialized[index], position);
+
+    if(position < 0)
+      return -1;
+  }
+
+  gs::state::CanonicalParameterValues migrated{};
+
+  if(
+    !gs::state::migrateSerializedParameterValues(
+      decoded.version,
+      std::span<const double>(
+        serialized.data(),
+        serializedCount
+      ),
+      migrated
+    )
+  )
+  {
+    return -1;
+  }
+
+  for(int index = 0; index < kNumParams; ++index)
+  {
+    GetParam(index)->Set(
+      migrated[static_cast<std::size_t>(index)]
+    );
+  }
+
+  OnParamReset(kPresetRecall);
+  return position;
 }
 
 #if IPLUG_DSP
@@ -451,6 +639,85 @@ gs::InputSource GitaSedap::currentInputSource() const noexcept
   return static_cast<gs::InputSource>(bounded);
 }
 
+gs::BodyCompareSlot GitaSedap::currentBodyCompareSlot() const noexcept
+{
+  const int raw = static_cast<int>(
+    std::lround(GetParam(kParamBodyCompareSlot)->Value())
+  );
+
+  const int bounded = std::clamp(
+    raw,
+    0,
+    static_cast<int>(gs::BodyCompareSlot::Count) - 1
+  );
+
+  return static_cast<gs::BodyCompareSlot>(bounded);
+}
+
+gs::BodyProfileChoice GitaSedap::currentBodyProfileChoice() const noexcept
+{
+  const int parameterIndex =
+    currentBodyCompareSlot() == gs::BodyCompareSlot::A
+      ? kParamBodyProfileA
+      : kParamBodyProfileB;
+
+  const int raw = static_cast<int>(
+    std::lround(GetParam(parameterIndex)->Value())
+  );
+
+  const int bounded = std::clamp(
+    raw,
+    0,
+    static_cast<int>(gs::BodyProfileChoice::Count) - 1
+  );
+
+  return static_cast<gs::BodyProfileChoice>(bounded);
+}
+
+const gsdsp::PreparedBodyProfile*
+GitaSedap::currentPreparedBodyProfile() const noexcept
+{
+  if(!mFactoryBodyProfilesReady)
+    return nullptr;
+
+  const auto choice = currentBodyProfileChoice();
+  const auto index = static_cast<std::size_t>(choice);
+
+  if(index >= mFactoryBodyProfiles.size())
+    return nullptr;
+
+  return &mFactoryBodyProfiles[index];
+}
+
+bool GitaSedap::prepareFactoryBodyProfiles(double sampleRate) noexcept
+{
+  const std::array<const gsdsp::BodyProfileDefinition*,
+                   kFactoryBodyProfileCount> definitions{
+    &gsdsp::rawConditionedProfile(),
+    &gsdsp::naturalDevelopmentProfile(),
+    &gsdsp::dreadnoughtDevelopmentProfile()
+  };
+
+  for(std::size_t index = 0; index < definitions.size(); ++index)
+  {
+    const auto compiled = gsdsp::compileBodyProfile(
+      *definitions[index],
+      sampleRate
+    );
+
+    if(!compiled.ok())
+    {
+      mFactoryBodyProfilesReady = false;
+      return false;
+    }
+
+    mFactoryBodyProfiles[index] = compiled.prepared;
+  }
+
+  mFactoryBodyProfilesReady = true;
+  return true;
+}
+
 void GitaSedap::OnReset()
 {
   const double sampleRate = std::max(GetSampleRate(), 8000.0);
@@ -462,40 +729,36 @@ void GitaSedap::OnReset()
 
   mBodyRuntime.prepare(
     sampleRate,
-    std::clamp(GetParam(kParamBody)->Value() / 100.0, 0.0, 1.0)
+    std::clamp(
+      GetParam(kParamBody)->Value() / 100.0,
+      0.0,
+      1.0
+    )
   );
 
-  const auto profileRequest =
-    mBodyRuntime.beginProfileRequest();
-
-  gsdsp::BodyProfileCompileError profileError{};
-
-  auto preparedProfile =
-    gsruntime::BodyProfileRuntime::prepareProfile(
-      profileRequest,
-      gsdsp::naturalDevelopmentProfile(),
-      sampleRate,
-      &profileError
-    );
-
-  if(
-    profileError == gsdsp::BodyProfileCompileError::None
-    && preparedProfile
-  )
+  if(prepareFactoryBodyProfiles(sampleRate))
   {
-    (void) mBodyRuntime.publish(
-      std::move(preparedProfile)
-    );
+    if(const auto* prepared = currentPreparedBodyProfile())
+    {
+      mBodyRuntime.requestPreparedProfileAtAudioBlock(*prepared);
+      mBodyRuntime.beginAudioBlock();
+    }
   }
 
   mOutputGain.prepare(sampleRate, 20.0);
-  mOutputGain.reset(dbToLinear(GetParam(kParamOutputDb)->Value()));
+  mOutputGain.reset(
+    dbToLinear(GetParam(kParamOutputDb)->Value())
+  );
 
   mBypassCrossfade.prepare(sampleRate, 5.0);
   mBypassCrossfade.reset(GetParam(kParamBypass)->Bool());
 }
 
-void GitaSedap::ProcessBlock(sample** inputs, sample** outputs, int nFrames)
+void GitaSedap::ProcessBlock(
+  sample** inputs,
+  sample** outputs,
+  int nFrames
+)
 {
   if(nFrames <= 0)
     return;
@@ -506,25 +769,45 @@ void GitaSedap::ProcessBlock(sample** inputs, sample** outputs, int nFrames)
   if(outputChannels <= 0)
     return;
 
-  if(inputChannels <= 0 || inputs == nullptr || inputs[0] == nullptr)
+  if(
+    inputChannels <= 0
+    || inputs == nullptr
+    || inputs[0] == nullptr
+  )
   {
     for(int channel = 0; channel < outputChannels; ++channel)
     {
       if(outputs[channel] != nullptr)
         std::fill_n(outputs[channel], nFrames, sample{0});
     }
+
     return;
   }
 
   mSourceAdapter.setSourceType(currentInputSource());
 
+  if(const auto* prepared = currentPreparedBodyProfile())
+  {
+    mBodyRuntime.requestPreparedProfileAtAudioBlock(*prepared);
+  }
+
   mBodyRuntime.beginAudioBlock();
 
   mBodyRuntime.setBodyAmountNormalized(
-    std::clamp(GetParam(kParamBody)->Value() / 100.0, 0.0, 1.0)
+    std::clamp(
+      GetParam(kParamBody)->Value() / 100.0,
+      0.0,
+      1.0
+    )
   );
-  mOutputGain.setTarget(dbToLinear(GetParam(kParamOutputDb)->Value()));
-  mBypassCrossfade.setBypassed(GetParam(kParamBypass)->Bool());
+
+  mOutputGain.setTarget(
+    dbToLinear(GetParam(kParamOutputDb)->Value())
+  );
+
+  mBypassCrossfade.setBypassed(
+    GetParam(kParamBypass)->Bool()
+  );
 
   mSourceAdapter.beginBlock();
 
@@ -534,9 +817,14 @@ void GitaSedap::ProcessBlock(sample** inputs, sample** outputs, int nFrames)
   {
     const double dry = static_cast<double>(monoInput[frame]);
 
-    const double conditioned = mSourceAdapter.processSample(dry);
-    const double bodied = mBodyRuntime.processSample(conditioned);
-    const double wet = bodied * mOutputGain.next();
+    const double conditioned =
+      mSourceAdapter.processSample(dry);
+
+    const double bodied =
+      mBodyRuntime.processSample(conditioned);
+
+    const double wet =
+      bodied * mOutputGain.next();
 
     const sample value = static_cast<sample>(
       mBypassCrossfade.process(dry, wet)
