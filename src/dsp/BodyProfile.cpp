@@ -62,11 +62,25 @@ void hashDouble(std::uint64_t& hash, double value) noexcept
   );
 }
 
+BodyProfileDefinition makeRawConditionedProfile()
+{
+  BodyProfileDefinition profile;
+  profile.id = BodyProfileId::RawConditioned;
+  profile.canonicalKey = "factory.raw-conditioned.v1";
+  profile.displayName = "Raw / P3";
+  profile.schemaVersion = kBodyProfileSchemaVersion;
+  profile.transferTapCount = 1;
+  profile.transferTaps[0] = 1.0;
+  profile.modeCount = 0;
+  profile.outputGain = 1.0;
+  return profile;
+}
+
 BodyProfileDefinition makeNaturalDevelopmentProfile()
 {
   BodyProfileDefinition profile;
   profile.id = BodyProfileId::NaturalDevelopment;
-  profile.canonicalKey = "factory.natural.dev.v1";
+  profile.canonicalKey = "factory.natural.dev.v2";
   profile.displayName = "Natural Development";
   profile.schemaVersion = kBodyProfileSchemaVersion;
 
@@ -122,7 +136,7 @@ BodyProfileDefinition makeNaturalDevelopmentProfile()
   for(std::size_t index = 0; index < modes.size(); ++index)
     profile.modes[index] = modes[index];
 
-  profile.outputGain = 0.94;
+  profile.outputGain = 1.0;
   return profile;
 }
 
@@ -130,7 +144,7 @@ BodyProfileDefinition makeDreadnoughtDevelopmentProfile()
 {
   BodyProfileDefinition profile;
   profile.id = BodyProfileId::DreadnoughtDevelopment;
-  profile.canonicalKey = "factory.dreadnought.dev.v1";
+  profile.canonicalKey = "factory.dreadnought.dev.v2";
   profile.displayName = "Dreadnought Development";
   profile.schemaVersion = kBodyProfileSchemaVersion;
 
@@ -188,11 +202,19 @@ BodyProfileDefinition makeDreadnoughtDevelopmentProfile()
   for(std::size_t index = 0; index < modes.size(); ++index)
     profile.modes[index] = modes[index];
 
-  profile.outputGain = 0.91;
+  profile.outputGain = 1.0;
   return profile;
 }
 
 } // namespace
+
+const BodyProfileDefinition& rawConditionedProfile() noexcept
+{
+  static const BodyProfileDefinition profile =
+    makeRawConditionedProfile();
+
+  return profile;
+}
 
 const BodyProfileDefinition& naturalDevelopmentProfile() noexcept
 {
