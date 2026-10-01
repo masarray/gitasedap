@@ -300,3 +300,74 @@ add_test(
   NAME gitasedap.body_profile_runtime
   COMMAND gitasedap_body_profile_runtime_tests
 )
+
+
+add_executable(
+  gitasedap_state_migration_tests
+  StateMigrationTests.cpp
+)
+
+target_link_libraries(
+  gitasedap_state_migration_tests
+  PRIVATE
+    gitasedap_core
+)
+
+target_compile_features(
+  gitasedap_state_migration_tests
+  PRIVATE
+    cxx_std_20
+)
+gitasedap_enable_project_warnings(gitasedap_state_migration_tests)
+
+add_test(
+  NAME gitasedap.state_migration
+  COMMAND gitasedap_state_migration_tests
+)
+
+add_executable(
+  gitasedap_profile_comparison_tests
+  ProfileComparisonTests.cpp
+)
+
+target_link_libraries(
+  gitasedap_profile_comparison_tests
+  PRIVATE
+    gitasedap_dsp
+    gitasedap_lab
+)
+
+target_compile_features(
+  gitasedap_profile_comparison_tests
+  PRIVATE
+    cxx_std_20
+)
+gitasedap_enable_project_warnings(gitasedap_profile_comparison_tests)
+
+add_test(
+  NAME gitasedap.profile_comparison
+  COMMAND gitasedap_profile_comparison_tests
+)
+
+add_executable(
+  gitasedap_factory_profile_runtime_tests
+  FactoryProfileRuntimeTests.cpp
+)
+
+target_link_libraries(
+  gitasedap_factory_profile_runtime_tests
+  PRIVATE
+    gitasedap_runtime
+)
+
+target_compile_features(
+  gitasedap_factory_profile_runtime_tests
+  PRIVATE
+    cxx_std_20
+)
+gitasedap_enable_project_warnings(gitasedap_factory_profile_runtime_tests)
+
+add_test(
+  NAME gitasedap.factory_profile_runtime
+  COMMAND gitasedap_factory_profile_runtime_tests
+)

@@ -15,8 +15,11 @@ inline constexpr std::array<std::uint8_t, 4> kMagic{
 };
 
 inline constexpr std::uint32_t kMinimumSupportedVersion = 1;
-inline constexpr std::uint32_t kCurrentVersion = 1;
+inline constexpr std::uint32_t kCurrentVersion = 2;
 inline constexpr std::size_t kHeaderSize = 8;
+
+inline constexpr std::size_t kVersion1ParameterCount = 6;
+inline constexpr std::size_t kVersion2ParameterCount = 9;
 
 using HeaderBytes = std::array<std::uint8_t, kHeaderSize>;
 
@@ -77,8 +80,28 @@ struct DecodedHeader
   return decoded.magicValid && isSupportedVersion(decoded.version);
 }
 
+[[nodiscard]] constexpr std::size_t serializedParameterCount(
+  std::uint32_t version
+) noexcept
+{
+  switch(version)
+  {
+    case 1:
+      return kVersion1ParameterCount;
+
+    case 2:
+      return kVersion2ParameterCount;
+
+    default:
+      return 0;
+  }
+}
+
 static_assert(kCurrentVersion >= kMinimumSupportedVersion);
 static_assert(encodeHeader()[0] == static_cast<std::uint8_t>('G'));
-static_assert(encodeHeader()[4] == 1u);
+static_assert(encodeHeader()[4] == 2u);
+static_assert(serializedParameterCount(1) == 6);
+static_assert(serializedParameterCount(2) == 9);
+static_assert(serializedParameterCount(3) == 0);
 
 } // namespace gitasedap::core::state

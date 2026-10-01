@@ -41,6 +41,13 @@ public:
     PreparedHandle prepared
   );
 
+  // Factory profiles are compiled outside the callback and copied here only
+  // when their canonical content hash changes. The copy is fixed-size,
+  // allocation-free, and is observed at the next block boundary.
+  void requestPreparedProfileAtAudioBlock(
+    const dsp::PreparedBodyProfile& prepared
+  ) noexcept;
+
   void beginAudioBlock() noexcept;
 
   void setBodyAmountNormalized(double normalizedAmount) noexcept;
@@ -66,6 +73,11 @@ public:
     return mAppliedProfileHash;
   }
 
+  [[nodiscard]] std::uint64_t desiredProfileHash() const noexcept
+  {
+    return mDesiredProfileHash;
+  }
+
   [[nodiscard]] bool isTransitioning() const noexcept
   {
     return mEngine.isTransitioning();
@@ -83,7 +95,12 @@ private:
   dsp::CrossfadingBodyEngine mEngine;
 
   double mSampleRate{48000.0};
+
+  dsp::PreparedBodyProfile mDesiredPreparedProfile{};
+  std::uint64_t mDesiredProfileHash{0};
   std::uint64_t mAppliedProfileHash{0};
+  std::uint64_t mObservedExchangeGeneration{0};
+  bool mHasDesiredPreparedProfile{false};
 };
 
 } // namespace gitasedap::runtime

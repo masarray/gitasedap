@@ -4,7 +4,7 @@
 
 namespace gsstate = gitasedap::core::state;
 
-constexpr bool canonicalHeaderBytesAreStable() noexcept
+constexpr bool currentHeaderBytesAreStable() noexcept
 {
   constexpr auto bytes = gsstate::encodeHeader();
 
@@ -12,10 +12,18 @@ constexpr bool canonicalHeaderBytesAreStable() noexcept
       && bytes[1] == static_cast<std::uint8_t>('S')
       && bytes[2] == static_cast<std::uint8_t>('D')
       && bytes[3] == static_cast<std::uint8_t>('P')
-      && bytes[4] == 1u
+      && bytes[4] == 2u
       && bytes[5] == 0u
       && bytes[6] == 0u
       && bytes[7] == 0u;
+}
+
+constexpr bool version1RemainsSupported() noexcept
+{
+  return gsstate::isSupportedHeader(
+    gsstate::encodeHeader(1u)
+  )
+  && gsstate::serializedParameterCount(1u) == 6;
 }
 
 constexpr bool rejectsCorruptMagic() noexcept
@@ -27,7 +35,8 @@ constexpr bool rejectsCorruptMagic() noexcept
 
 constexpr bool rejectsFutureVersion() noexcept
 {
-  constexpr auto bytes = gsstate::encodeHeader(gsstate::kCurrentVersion + 1u);
+  constexpr auto bytes =
+    gsstate::encodeHeader(gsstate::kCurrentVersion + 1u);
   return !gsstate::isSupportedHeader(bytes);
 }
 
@@ -37,8 +46,10 @@ constexpr bool rejectsVersionZero() noexcept
   return !gsstate::isSupportedHeader(bytes);
 }
 
-static_assert(canonicalHeaderBytesAreStable());
+static_assert(currentHeaderBytesAreStable());
+static_assert(version1RemainsSupported());
 static_assert(gsstate::isSupportedHeader(gsstate::encodeHeader()));
+static_assert(gsstate::serializedParameterCount(2u) == 9);
 static_assert(rejectsCorruptMagic());
 static_assert(rejectsFutureVersion());
 static_assert(rejectsVersionZero());

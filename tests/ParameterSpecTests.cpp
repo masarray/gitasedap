@@ -17,17 +17,24 @@ constexpr bool stableCanonicalOrder() noexcept
       && gs::kCanonicalParameterKeys[2] == "enhance"
       && gs::kCanonicalParameterKeys[3] == "output_db"
       && gs::kCanonicalParameterKeys[4] == "bypass"
-      && gs::kCanonicalParameterKeys[5] == "input_source";
+      && gs::kCanonicalParameterKeys[5] == "input_source"
+      && gs::kCanonicalParameterKeys[6] == "body_profile_a"
+      && gs::kCanonicalParameterKeys[7] == "body_profile_b"
+      && gs::kCanonicalParameterKeys[8] == "body_compare_slot";
 }
 
-static_assert(gs::parameterCount() == 6);
+static_assert(gs::parameterCount() == 9);
 static_assert(gs::canonicalKeysAreUnique());
 static_assert(allContinuousSpecsValid());
 static_assert(stableCanonicalOrder());
 
+static_assert(gs::toIndex(gs::ParameterId::Body) == 0);
+static_assert(gs::toIndex(gs::ParameterId::InputSource) == 5);
+static_assert(gs::toIndex(gs::ParameterId::BodyProfileA) == 6);
+static_assert(gs::toIndex(gs::ParameterId::BodyProfileB) == 7);
+static_assert(gs::toIndex(gs::ParameterId::BodyCompareSlot) == 8);
+
 int main()
 {
-  // Compile-time invariants above are the test. Keep an executable so CTest
-  // verifies the translation unit under every supported toolchain/configuration.
   return 0;
 }
