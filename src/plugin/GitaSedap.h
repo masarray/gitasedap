@@ -2,11 +2,14 @@
 
 #include "IPlug_include_in_plug_hdr.h"
 #include "core/ParameterSpec.h"
+#include "core/StateMigration.h"
 #include "core/StateSchema.h"
 #include "dsp/BodyProfileCompiler.h"
 #include "dsp/SourceAdapter.h"
 #include "runtime/BodyProfileRuntime.h"
 #include "dsp/Smoothing.h"
+
+#include <array>
 
 namespace gs = gitasedap::core;
 namespace gsdsp = gitasedap::dsp;
@@ -22,6 +25,9 @@ enum EParams
   kParamOutputDb = gs::toIndex(gs::ParameterId::OutputDb),
   kParamBypass = gs::toIndex(gs::ParameterId::Bypass),
   kParamInputSource = gs::toIndex(gs::ParameterId::InputSource),
+  kParamBodyProfileA = gs::toIndex(gs::ParameterId::BodyProfileA),
+  kParamBodyProfileB = gs::toIndex(gs::ParameterId::BodyProfileB),
+  kParamBodyCompareSlot = gs::toIndex(gs::ParameterId::BodyCompareSlot),
   kNumParams = gs::toIndex(gs::ParameterId::Count)
 };
 
@@ -54,9 +60,20 @@ private:
 #if IPLUG_DSP
   [[nodiscard]] static double dbToLinear(double db) noexcept;
   [[nodiscard]] gs::InputSource currentInputSource() const noexcept;
+  [[nodiscard]] gs::BodyCompareSlot currentBodyCompareSlot() const noexcept;
+  [[nodiscard]] gs::BodyProfileChoice currentBodyProfileChoice() const noexcept;
+  [[nodiscard]] const gsdsp::PreparedBodyProfile* currentPreparedBodyProfile() const noexcept;
+  [[nodiscard]] bool prepareFactoryBodyProfiles(double sampleRate) noexcept;
+
+  static constexpr std::size_t kFactoryBodyProfileCount =
+    static_cast<std::size_t>(gs::BodyProfileChoice::Count);
 
   gsdsp::SourceAdapter mSourceAdapter;
   gsruntime::BodyProfileRuntime mBodyRuntime;
+  std::array<gsdsp::PreparedBodyProfile, kFactoryBodyProfileCount>
+    mFactoryBodyProfiles{};
+  bool mFactoryBodyProfilesReady{false};
+
   gsdsp::LinearSmoother mOutputGain;
   gsdsp::BypassCrossfade mBypassCrossfade;
 #endif
