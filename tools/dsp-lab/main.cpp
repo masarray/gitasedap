@@ -783,24 +783,28 @@ int commandProfileCompare(int argc, char** argv)
     );
   }
 
-  auto input = makeSyntheticBodyFixture(sampleRate);
+  // Listening evidence: guitar-like synthetic fixture. These files make the
+  // profile differences easy to inspect, but their RMS is intentionally not
+  // used as the hard level-match oracle because their spectrum is highly
+  // content-specific.
+  auto listeningInput = makeSyntheticBodyFixture(sampleRate);
 
   auto rawOutput = processBody(
-    input,
+    listeningInput,
     sampleRate,
     raw.prepared,
     1.0
   );
 
   auto naturalOutput = processBody(
-    input,
+    listeningInput,
     sampleRate,
     natural.prepared,
     1.0
   );
 
   auto dreadOutput = processBody(
-    input,
+    listeningInput,
     sampleRate,
     dreadnought.prepared,
     1.0
@@ -824,12 +828,50 @@ int commandProfileCompare(int argc, char** argv)
     dreadOutput
   );
 
-  const auto rawReport =
+  const auto rawListeningReport =
     gslab::analyzeFiniteAudio(rawOutput);
-  const auto naturalReport =
+  const auto naturalListeningReport =
     gslab::analyzeFiniteAudio(naturalOutput);
-  const auto dreadReport =
+  const auto dreadListeningReport =
     gslab::analyzeFiniteAudio(dreadOutput);
+
+  // Calibration evidence: the exact deterministic pink-noise gate used by the
+  // regression suite. This prevents a narrow synthetic phrase from defining
+  // the static comparison gain.
+  const auto calibration = gslab::SignalGenerator::pinkNoise(
+    1,
+    static_cast<std::size_t>(sampleRate) * 4U,
+    0x5034434C564C4D54ULL,
+    0.20F
+  );
+
+  const auto rawCalibration = processBody(
+    calibration,
+    sampleRate,
+    raw.prepared,
+    1.0
+  );
+
+  const auto naturalCalibration = processBody(
+    calibration,
+    sampleRate,
+    natural.prepared,
+    1.0
+  );
+
+  const auto dreadCalibration = processBody(
+    calibration,
+    sampleRate,
+    dreadnought.prepared,
+    1.0
+  );
+
+  const auto rawReport =
+    gslab::analyzeFiniteAudio(rawCalibration);
+  const auto naturalReport =
+    gslab::analyzeFiniteAudio(naturalCalibration);
+  const auto dreadReport =
+    gslab::analyzeFiniteAudio(dreadCalibration);
 
   const auto levelDb = [](double reference, double candidate) {
     if(reference <= 0.0 || candidate <= 0.0)
@@ -853,7 +895,12 @@ int commandProfileCompare(int argc, char** argv)
     dreadReport.rms
   );
 
-  const bool finite =
+  const bool listeningFinite =
+    rawListeningReport.allFinite()
+    && naturalListeningReport.allFinite()
+    && dreadListeningReport.allFinite();
+
+  const bool calibrationFinite =
     rawReport.allFinite()
     && naturalReport.allFinite()
     && dreadReport.allFinite();
@@ -865,20 +912,25 @@ int commandProfileCompare(int argc, char** argv)
 
   std::cout
     << "fixture=synthetic_body_comparison\n"
+    << "calibration=deterministic_pink_noise_4s\n"
     << "sample_rate=" << sampleRate << "\n"
     << "raw_profile=" << gsdsp::rawConditionedProfile().canonicalKey << "\n"
     << "natural_profile=" << gsdsp::naturalDevelopmentProfile().canonicalKey << "\n"
     << "dread_profile=" << gsdsp::dreadnoughtDevelopmentProfile().canonicalKey << "\n"
-    << "raw_rms=" << rawReport.rms << "\n"
-    << "natural_rms=" << naturalReport.rms << "\n"
-    << "dread_rms=" << dreadReport.rms << "\n"
+    << "listening_raw_rms=" << rawListeningReport.rms << "\n"
+    << "listening_natural_rms=" << naturalListeningReport.rms << "\n"
+    << "listening_dread_rms=" << dreadListeningReport.rms << "\n"
+    << "calibration_raw_rms=" << rawReport.rms << "\n"
+    << "calibration_natural_rms=" << naturalReport.rms << "\n"
+    << "calibration_dread_rms=" << dreadReport.rms << "\n"
     << "natural_vs_raw_db=" << naturalVsRaw << "\n"
     << "dread_vs_raw_db=" << dreadVsRaw << "\n"
     << "dread_vs_natural_db=" << dreadVsNatural << "\n"
-    << "finite=" << (finite ? "true" : "false") << "\n"
+    << "listening_finite=" << (listeningFinite ? "true" : "false") << "\n"
+    << "calibration_finite=" << (calibrationFinite ? "true" : "false") << "\n"
     << "engineering_level_match=" << (levelMatched ? "true" : "false") << "\n";
 
-  return finite && levelMatched ? 0 : 2;
+  return listeningFinite && calibrationFinite && levelMatched ? 0 : 2;
 }
 
 int commandSourceDemo(int argc, char** argv)
