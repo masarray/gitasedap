@@ -18,7 +18,10 @@ void BodyProfileRuntime::prepare(
     initialBodyAmountNormalized
   );
 
+  mDesiredPreparedProfile = {};
+  mDesiredProfileHash = 0;
   mAppliedProfileHash = 0;
+  mHasDesiredPreparedProfile = false;
 }
 
 void BodyProfileRuntime::resetAudioState() noexcept
@@ -64,28 +67,67 @@ BodyProfileRuntime::PublishResult BodyProfileRuntime::publish(
   return mExchange.publish(std::move(prepared));
 }
 
+void BodyProfileRuntime::requestPreparedProfileAtAudioBlock(
+  const dsp::PreparedBodyProfile& prepared
+) noexcept
+{
+  if(prepared.contentHash == 0)
+    return;
+
+  if(
+    prepared.contentHash == mDesiredProfileHash
+    && (
+      mHasDesiredPreparedProfile
+      || prepared.contentHash == mAppliedProfileHash
+    )
+  )
+  {
+    return;
+  }
+
+  mDesiredPreparedProfile = prepared;
+  mDesiredProfileHash = prepared.contentHash;
+  mHasDesiredPreparedProfile = true;
+}
+
 void BodyProfileRuntime::beginAudioBlock() noexcept
 {
-  const auto* prepared =
-    mExchange.acquireForAudioBlock();
+  // External/custom profiles use the generation-safe exchange. Copy the newest
+  // immutable state into the same bounded desired slot used by factory
+  // selections. No exchanged pointer is retained by the DSP engine.
+  if(const auto* prepared = mExchange.acquireForAudioBlock())
+  {
+    requestPreparedProfileAtAudioBlock(*prepared);
+  }
 
-  if(prepared == nullptr)
+  if(!mHasDesiredPreparedProfile)
     return;
 
   if(!mEngine.hasPreparedProfile())
   {
-    mEngine.activateInitial(*prepared);
-    mAppliedProfileHash = prepared->contentHash;
+    mEngine.activateInitial(mDesiredPreparedProfile);
+    mAppliedProfileHash = mDesiredProfileHash;
+    mHasDesiredPreparedProfile = false;
     return;
   }
 
-  if(
-    !mEngine.isTransitioning()
-    && prepared->contentHash != mAppliedProfileHash
-  )
+  if(mEngine.isTransitioning())
+    return;
+
+  if(mDesiredProfileHash == mEngine.activeProfileHash())
   {
-    if(mEngine.beginProfileTransition(*prepared))
-      mAppliedProfileHash = prepared->contentHash;
+    mAppliedProfileHash = mDesiredProfileHash;
+    mHasDesiredPreparedProfile = false;
+    return;
+  }
+
+  if(mEngine.beginProfileTransition(mDesiredPreparedProfile))
+  {
+    // "Applied" denotes the profile selected for the current bounded
+    // transition. activeProfileHash() remains the sounding source until the
+    // crossfade completes.
+    mAppliedProfileHash = mDesiredProfileHash;
+    mHasDesiredPreparedProfile = false;
   }
 }
 
@@ -114,7 +156,10 @@ std::size_t BodyProfileRuntime::ownedPreparedStateCount() const
 void BodyProfileRuntime::shutdownAfterAudioStopped() noexcept
 {
   mExchange.shutdownAfterAudioStopped();
+  mDesiredPreparedProfile = {};
+  mDesiredProfileHash = 0;
   mAppliedProfileHash = 0;
+  mHasDesiredPreparedProfile = false;
 }
 
 } // namespace gitasedap::runtime
