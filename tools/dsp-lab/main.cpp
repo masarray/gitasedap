@@ -290,7 +290,8 @@ void printUsage()
     << "  benchmark-body [sampleRate] [blockSize] [iterations]\n"
     << "  benchmark-body-switch [sampleRate] [blockSize] [iterations]\n"
     << "  source-demo <input.wav> <processed.wav> [sampleRate]\n"
-    << "  body-demo <input.wav> <processed.wav> [sampleRate]\n";
+    << "  body-demo <input.wav> <processed.wav> [sampleRate]\n"
+    << "  profile-compare <raw.wav> <natural.wav> <dread.wav> [sampleRate]\n";
 }
 
 int commandGenerate(int argc, char** argv)
@@ -746,6 +747,140 @@ int commandBodyDemo(int argc, char** argv)
   return report.allFinite() ? 0 : 2;
 }
 
+int commandProfileCompare(int argc, char** argv)
+{
+  if(argc < 5)
+  {
+    throw std::invalid_argument(
+      "profile-compare requires raw, natural, and dread output paths"
+    );
+  }
+
+  const auto sampleRate = parseU32(
+    argc > 5 ? argv[5] : nullptr,
+    48000U
+  );
+
+  const auto raw = gsdsp::compileBodyProfile(
+    gsdsp::rawConditionedProfile(),
+    sampleRate
+  );
+
+  const auto natural = gsdsp::compileBodyProfile(
+    gsdsp::naturalDevelopmentProfile(),
+    sampleRate
+  );
+
+  const auto dreadnought = gsdsp::compileBodyProfile(
+    gsdsp::dreadnoughtDevelopmentProfile(),
+    sampleRate
+  );
+
+  if(!raw.ok() || !natural.ok() || !dreadnought.ok())
+  {
+    throw std::runtime_error(
+      "unable to compile P4C comparison profiles"
+    );
+  }
+
+  auto input = makeSyntheticBodyFixture(sampleRate);
+
+  auto rawOutput = processBody(
+    input,
+    sampleRate,
+    raw.prepared,
+    1.0
+  );
+
+  auto naturalOutput = processBody(
+    input,
+    sampleRate,
+    natural.prepared,
+    1.0
+  );
+
+  auto dreadOutput = processBody(
+    input,
+    sampleRate,
+    dreadnought.prepared,
+    1.0
+  );
+
+  gslab::WavFile::writeFloat32(
+    argv[2],
+    sampleRate,
+    rawOutput
+  );
+
+  gslab::WavFile::writeFloat32(
+    argv[3],
+    sampleRate,
+    naturalOutput
+  );
+
+  gslab::WavFile::writeFloat32(
+    argv[4],
+    sampleRate,
+    dreadOutput
+  );
+
+  const auto rawReport =
+    gslab::analyzeFiniteAudio(rawOutput);
+  const auto naturalReport =
+    gslab::analyzeFiniteAudio(naturalOutput);
+  const auto dreadReport =
+    gslab::analyzeFiniteAudio(dreadOutput);
+
+  const auto levelDb = [](double reference, double candidate) {
+    if(reference <= 0.0 || candidate <= 0.0)
+      return 0.0;
+
+    return 20.0 * std::log10(candidate / reference);
+  };
+
+  const double naturalVsRaw = levelDb(
+    rawReport.rms,
+    naturalReport.rms
+  );
+
+  const double dreadVsRaw = levelDb(
+    rawReport.rms,
+    dreadReport.rms
+  );
+
+  const double dreadVsNatural = levelDb(
+    naturalReport.rms,
+    dreadReport.rms
+  );
+
+  const bool finite =
+    rawReport.allFinite()
+    && naturalReport.allFinite()
+    && dreadReport.allFinite();
+
+  const bool levelMatched =
+    std::abs(naturalVsRaw) <= 0.35
+    && std::abs(dreadVsRaw) <= 0.35
+    && std::abs(dreadVsNatural) <= 0.25;
+
+  std::cout
+    << "fixture=synthetic_body_comparison\n"
+    << "sample_rate=" << sampleRate << "\n"
+    << "raw_profile=" << gsdsp::rawConditionedProfile().canonicalKey << "\n"
+    << "natural_profile=" << gsdsp::naturalDevelopmentProfile().canonicalKey << "\n"
+    << "dread_profile=" << gsdsp::dreadnoughtDevelopmentProfile().canonicalKey << "\n"
+    << "raw_rms=" << rawReport.rms << "\n"
+    << "natural_rms=" << naturalReport.rms << "\n"
+    << "dread_rms=" << dreadReport.rms << "\n"
+    << "natural_vs_raw_db=" << naturalVsRaw << "\n"
+    << "dread_vs_raw_db=" << dreadVsRaw << "\n"
+    << "dread_vs_natural_db=" << dreadVsNatural << "\n"
+    << "finite=" << (finite ? "true" : "false") << "\n"
+    << "engineering_level_match=" << (levelMatched ? "true" : "false") << "\n";
+
+  return finite && levelMatched ? 0 : 2;
+}
+
 int commandSourceDemo(int argc, char** argv)
 {
   if(argc < 4)
@@ -834,6 +969,9 @@ int main(int argc, char** argv)
 
     if(command == "body-demo")
       return commandBodyDemo(argc, argv);
+
+    if(command == "profile-compare")
+      return commandProfileCompare(argc, argv);
 
     printUsage();
     return 1;
