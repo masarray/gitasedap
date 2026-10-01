@@ -10,16 +10,22 @@ namespace gsdsp = gitasedap::dsp;
 
 int main()
 {
+  const auto& raw = gsdsp::rawConditionedProfile();
   const auto& natural = gsdsp::naturalDevelopmentProfile();
   const auto& dreadnought = gsdsp::dreadnoughtDevelopmentProfile();
 
+  GS_REQUIRE(gsdsp::validateBodyProfileDefinition(raw).ok());
   GS_REQUIRE(gsdsp::validateBodyProfileDefinition(natural).ok());
   GS_REQUIRE(gsdsp::validateBodyProfileDefinition(dreadnought).ok());
 
-  GS_REQUIRE(!natural.canonicalKey.empty());
-  GS_REQUIRE(!dreadnought.canonicalKey.empty());
+  GS_REQUIRE(raw.canonicalKey == "factory.raw-conditioned.v1");
+  GS_REQUIRE(natural.canonicalKey == "factory.natural.dev.v2");
+  GS_REQUIRE(dreadnought.canonicalKey == "factory.dreadnought.dev.v2");
+  GS_REQUIRE(raw.canonicalKey != natural.canonicalKey);
   GS_REQUIRE(natural.canonicalKey != dreadnought.canonicalKey);
 
+  const auto rawHash =
+    gsdsp::hashBodyProfileDefinition(raw);
   const auto naturalHashA =
     gsdsp::hashBodyProfileDefinition(natural);
   const auto naturalHashB =
@@ -27,8 +33,10 @@ int main()
   const auto dreadnoughtHash =
     gsdsp::hashBodyProfileDefinition(dreadnought);
 
+  GS_REQUIRE(rawHash != 0);
   GS_REQUIRE(naturalHashA != 0);
   GS_REQUIRE(naturalHashA == naturalHashB);
+  GS_REQUIRE(rawHash != naturalHashA);
   GS_REQUIRE(naturalHashA != dreadnoughtHash);
 
   constexpr std::array<double, 4> sampleRates{
