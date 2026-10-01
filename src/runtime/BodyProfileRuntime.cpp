@@ -21,6 +21,7 @@ void BodyProfileRuntime::prepare(
   mDesiredPreparedProfile = {};
   mDesiredProfileHash = 0;
   mAppliedProfileHash = 0;
+  mObservedExchangeGeneration = 0;
   mHasDesiredPreparedProfile = false;
 }
 
@@ -92,12 +93,21 @@ void BodyProfileRuntime::requestPreparedProfileAtAudioBlock(
 
 void BodyProfileRuntime::beginAudioBlock() noexcept
 {
-  // External/custom profiles use the generation-safe exchange. Copy the newest
-  // immutable state into the same bounded desired slot used by factory
-  // selections. No exchanged pointer is retained by the DSP engine.
+  // External/custom profiles use the generation-safe exchange. Observe each
+  // published generation exactly once so an old exchanged profile cannot
+  // repeatedly overwrite a later direct factory A/B selection.
   if(const auto* prepared = mExchange.acquireForAudioBlock())
   {
-    requestPreparedProfileAtAudioBlock(*prepared);
+    const auto generation = mExchange.activeGeneration();
+
+    if(
+      generation != 0
+      && generation != mObservedExchangeGeneration
+    )
+    {
+      requestPreparedProfileAtAudioBlock(*prepared);
+      mObservedExchangeGeneration = generation;
+    }
   }
 
   if(!mHasDesiredPreparedProfile)
