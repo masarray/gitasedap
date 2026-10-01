@@ -99,6 +99,7 @@ private:
   dsp::PreparedBodyProfile mDesiredPreparedProfile{};
   std::uint64_t mDesiredProfileHash{0};
   std::uint64_t mAppliedProfileHash{0};
+  std::uint64_t mObservedExchangeGeneration{0};
   bool mHasDesiredPreparedProfile{false};
 };
 
