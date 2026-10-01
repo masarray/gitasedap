@@ -14,6 +14,7 @@ inline constexpr std::uint32_t kBodyProfileSchemaVersion = 1;
 
 enum class BodyProfileId : std::uint32_t
 {
+  RawConditioned = 0,
   NaturalDevelopment = 1,
   DreadnoughtDevelopment = 2
 };
@@ -67,6 +68,7 @@ struct BodyProfileValidationResult
   }
 };
 
+[[nodiscard]] const BodyProfileDefinition& rawConditionedProfile() noexcept;
 [[nodiscard]] const BodyProfileDefinition& naturalDevelopmentProfile() noexcept;
 [[nodiscard]] const BodyProfileDefinition& dreadnoughtDevelopmentProfile() noexcept;
 
