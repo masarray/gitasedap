@@ -33,14 +33,14 @@
 
 #define PLUG_HAS_UI 1
 #define PLUG_WIDTH 760
-#define PLUG_HEIGHT 430
+#define PLUG_HEIGHT 510
 #define PLUG_FPS 30
 #define PLUG_SHARED_RESOURCES 0
 #define PLUG_HOST_RESIZE 1
 #define PLUG_MIN_WIDTH 640
-#define PLUG_MIN_HEIGHT 360
+#define PLUG_MIN_HEIGHT 420
 #define PLUG_MAX_WIDTH 1520
-#define PLUG_MAX_HEIGHT 860
+#define PLUG_MAX_HEIGHT 1020
 
 #define AUV2_ENTRY GitaSedap_Entry
 #define AUV2_ENTRY_STR "GitaSedap_Entry"
