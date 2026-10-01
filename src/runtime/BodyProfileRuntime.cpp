@@ -169,6 +169,7 @@ void BodyProfileRuntime::shutdownAfterAudioStopped() noexcept
   mDesiredPreparedProfile = {};
   mDesiredProfileHash = 0;
   mAppliedProfileHash = 0;
+  mObservedExchangeGeneration = 0;
   mHasDesiredPreparedProfile = false;
 }
 
