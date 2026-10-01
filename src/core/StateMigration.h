@@ -12,37 +12,37 @@ namespace gitasedap::core::state
 {
 
 using CanonicalParameterValues =
-  std::array<double, core::parameterCount()>;
+  std::array<double, ::gitasedap::core::parameterCount()>;
 
 [[nodiscard]] constexpr CanonicalParameterValues
 defaultCanonicalParameterValues() noexcept
 {
   CanonicalParameterValues values{};
 
-  values[core::toIndex(core::ParameterId::Body)] =
-    core::kBodySpec.defaultValue;
-  values[core::toIndex(core::ParameterId::Air)] =
-    core::kAirSpec.defaultValue;
-  values[core::toIndex(core::ParameterId::Enhance)] =
-    core::kEnhanceSpec.defaultValue;
-  values[core::toIndex(core::ParameterId::OutputDb)] =
-    core::kOutputSpec.defaultValue;
-  values[core::toIndex(core::ParameterId::Bypass)] = 0.0;
-  values[core::toIndex(core::ParameterId::InputSource)] =
-    static_cast<double>(core::InputSource::ActivePiezo);
+  values[::gitasedap::core::toIndex(::gitasedap::core::ParameterId::Body)] =
+    ::gitasedap::core::kBodySpec.defaultValue;
+  values[::gitasedap::core::toIndex(::gitasedap::core::ParameterId::Air)] =
+    ::gitasedap::core::kAirSpec.defaultValue;
+  values[::gitasedap::core::toIndex(::gitasedap::core::ParameterId::Enhance)] =
+    ::gitasedap::core::kEnhanceSpec.defaultValue;
+  values[::gitasedap::core::toIndex(::gitasedap::core::ParameterId::OutputDb)] =
+    ::gitasedap::core::kOutputSpec.defaultValue;
+  values[::gitasedap::core::toIndex(::gitasedap::core::ParameterId::Bypass)] = 0.0;
+  values[::gitasedap::core::toIndex(::gitasedap::core::ParameterId::InputSource)] =
+    static_cast<double>(::gitasedap::core::InputSource::ActivePiezo);
 
-  values[core::toIndex(core::ParameterId::BodyProfileA)] =
+  values[::gitasedap::core::toIndex(::gitasedap::core::ParameterId::BodyProfileA)] =
     static_cast<double>(
-      core::BodyProfileChoice::NaturalDevelopment
+      ::gitasedap::core::BodyProfileChoice::NaturalDevelopment
     );
 
-  values[core::toIndex(core::ParameterId::BodyProfileB)] =
+  values[::gitasedap::core::toIndex(::gitasedap::core::ParameterId::BodyProfileB)] =
     static_cast<double>(
-      core::BodyProfileChoice::DreadnoughtDevelopment
+      ::gitasedap::core::BodyProfileChoice::DreadnoughtDevelopment
     );
 
-  values[core::toIndex(core::ParameterId::BodyCompareSlot)] =
-    static_cast<double>(core::BodyCompareSlot::A);
+  values[::gitasedap::core::toIndex(::gitasedap::core::ParameterId::BodyCompareSlot)] =
+    static_cast<double>(::gitasedap::core::BodyCompareSlot::A);
 
   return values;
 }
@@ -74,19 +74,19 @@ defaultCanonicalParameterValues() noexcept
 
 static_assert(
   defaultCanonicalParameterValues()[
-    core::toIndex(core::ParameterId::BodyProfileA)
+    ::gitasedap::core::toIndex(::gitasedap::core::ParameterId::BodyProfileA)
   ]
   == static_cast<double>(
-    core::BodyProfileChoice::NaturalDevelopment
+    ::gitasedap::core::BodyProfileChoice::NaturalDevelopment
   )
 );
 
 static_assert(
   defaultCanonicalParameterValues()[
-    core::toIndex(core::ParameterId::BodyProfileB)
+    ::gitasedap::core::toIndex(::gitasedap::core::ParameterId::BodyProfileB)
   ]
   == static_cast<double>(
-    core::BodyProfileChoice::DreadnoughtDevelopment
+    ::gitasedap::core::BodyProfileChoice::DreadnoughtDevelopment
   )
 );
 
