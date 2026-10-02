@@ -454,9 +454,22 @@ void extractModeCandidates(
       continue;
     }
 
+    // A body resonance commonly spans several adjacent log bands. Using only
+    // the immediate neighbours as the prominence baseline makes a legitimate
+    // finite-Q hump look artificially flat. Compare the peak with conservative
+    // shoulders two bands away while still requiring a true local maximum
+    // against the immediate neighbours above.
+    const std::size_t leftShoulder =
+      index >= 2U ? index - 2U : index - 1U;
+
+    const std::size_t rightShoulder =
+      (index + 2U) < report.bands.size()
+        ? index + 2U
+        : index + 1U;
+
     const double localBase = std::max(
-      smooth[index - 1],
-      smooth[index + 1]
+      smooth[leftShoulder],
+      smooth[rightShoulder]
     );
 
     const double prominence = peak - localBase;
