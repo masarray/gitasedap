@@ -371,3 +371,29 @@ add_test(
   NAME gitasedap.factory_profile_runtime
   COMMAND gitasedap_factory_profile_runtime_tests
 )
+
+
+add_executable(
+  gitasedap_real_guitar_calibration_tests
+  RealGuitarCalibrationTests.cpp
+)
+
+target_link_libraries(
+  gitasedap_real_guitar_calibration_tests
+  PRIVATE
+    gitasedap_lab
+)
+
+target_compile_features(
+  gitasedap_real_guitar_calibration_tests
+  PRIVATE
+    cxx_std_20
+)
+gitasedap_enable_project_warnings(
+  gitasedap_real_guitar_calibration_tests
+)
+
+add_test(
+  NAME gitasedap.real_guitar_calibration
+  COMMAND gitasedap_real_guitar_calibration_tests
+)
