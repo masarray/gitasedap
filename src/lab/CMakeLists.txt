@@ -2,6 +2,7 @@ add_library(
   gitasedap_lab
   STATIC
     OfflineRenderer.cpp
+    RealGuitarCalibration.cpp
     SignalGenerator.cpp
     WavFile.cpp
 )
