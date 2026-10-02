@@ -79,9 +79,23 @@ struct Resonator
     const double source =
       static_cast<double>(piezo.channel(0)[frame]);
 
+    // Keep the delayed broadband source dominant so alignment remains a real
+    // paired-capture test, while adding a deterministic narrow body feature at
+    // 220 Hz so candidate extraction has a known ground truth.
+    const double bodyTone =
+      0.10
+      * std::sin(
+        2.0
+        * std::numbers::pi
+        * 220.0
+        * static_cast<double>(frame)
+        / sampleRate
+      );
+
     const double colored =
       (source * 0.72)
-      + (resonator.process(source) * 0.55);
+      + (resonator.process(source) * 0.55)
+      + bodyTone;
 
     const auto destination = frame + lagSamples;
 
