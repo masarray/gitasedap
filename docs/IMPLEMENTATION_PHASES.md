@@ -117,12 +117,30 @@ Produce the first convincing piezo-to-acoustic-body transformation.
 - Canonical profile IDs/versioning.
 - Content hash/checksum.
 
+### P4D real-guitar calibration gate
+
+Before P4 is considered tonally complete:
+
+- capture simultaneous real piezo + reference microphone material,
+- validate capture quality and timing alignment,
+- measure relative transfer shape and supported bands,
+- evaluate Raw/Natural/Dread residual spectral error,
+- review measured modal frequency/Q/prominence candidates,
+- change development-profile coefficients only from an explicit measured hypothesis,
+- repeat level-matched A/B listening on the real guitar,
+- retain before/after evidence for the accepted profile revision.
+
+Synthetic fixtures verify tooling and regression behavior only. They do not satisfy
+the P4D tonal acceptance gate.
+
 ### Exit criteria
 - Body transformation is clearly more natural than raw piezo in blind internal comparisons.
 - No obvious reverb-like tail.
 - No unstable modes.
 - Profile change does not block audio.
 - Rapid switching produces no leak or crash.
+- At least one representative real-guitar paired capture passes the P4D quality gate.
+- Accepted Natural/Dreadnought profile changes have measured before/after evidence.
 
 ## P5 - Dynamic Body and Body Space
 
