@@ -8,6 +8,7 @@
 #include "lab/DeadlineBenchmark.h"
 #include "lab/FiniteAudioGuard.h"
 #include "lab/GoldenCompare.h"
+#include "lab/RealGuitarCalibration.h"
 #include "lab/SignalGenerator.h"
 #include "lab/WavFile.h"
 
@@ -17,9 +18,12 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <numbers>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -262,6 +266,202 @@ namespace
   return output;
 }
 
+[[nodiscard]] gslab::AudioBuffer firstChannel(
+  const gslab::AudioBuffer& input
+)
+{
+  if(input.channelCount() == 0)
+    throw std::invalid_argument("audio has no channels");
+
+  gslab::AudioBuffer output(1, input.frameCount());
+
+  std::copy(
+    input.channel(0).begin(),
+    input.channel(0).end(),
+    output.channel(0).begin()
+  );
+
+  return output;
+}
+
+[[nodiscard]] gslab::AudioBuffer selectedChannel(
+  const gslab::AudioBuffer& input,
+  std::size_t channel
+)
+{
+  if(channel >= input.channelCount())
+    throw std::invalid_argument("requested channel does not exist");
+
+  gslab::AudioBuffer output(1, input.frameCount());
+
+  std::copy(
+    input.channel(channel).begin(),
+    input.channel(channel).end(),
+    output.channel(0).begin()
+  );
+
+  return output;
+}
+
+void printCalibrationSummary(
+  const gslab::RealGuitarCalibrationReport& report
+)
+{
+  std::cout
+    << std::setprecision(10)
+    << "sample_rate=" << report.sampleRate << "\n"
+    << "analyzed_frames=" << report.analyzedFrames << "\n"
+    << "duration_seconds=" << report.durationSeconds << "\n"
+    << "piezo_peak_dbfs=" << report.piezoPeakDbFs << "\n"
+    << "reference_peak_dbfs=" << report.referencePeakDbFs << "\n"
+    << "piezo_rms_dbfs=" << report.piezoRmsDbFs << "\n"
+    << "reference_rms_dbfs=" << report.referenceRmsDbFs << "\n"
+    << "reference_lag_samples=" << report.estimatedReferenceLagSamples << "\n"
+    << "reference_lag_ms=" << report.estimatedReferenceLagMilliseconds << "\n"
+    << "alignment_score=" << report.alignmentScore << "\n"
+    << "transfer_normalization_db=" << report.transferNormalizationDb << "\n"
+    << "spectral_shape_rms_db=" << report.spectralShapeRmsDb << "\n"
+    << "spectral_shape_max_abs_db=" << report.spectralShapeMaxAbsDb << "\n"
+    << "body_band_mean_db=" << report.bodyBandMeanDb << "\n"
+    << "quack_band_mean_db=" << report.quackBandMeanDb << "\n"
+    << "air_band_mean_db=" << report.airBandMeanDb << "\n"
+    << "supported_bands=" << report.supportedBandCount << "\n"
+    << "mode_candidates=" << report.modeCandidateCount << "\n"
+    << "issue_mask="
+    << static_cast<std::uint32_t>(report.issues)
+    << "\n"
+    << "capture_accepted="
+    << (report.captureAcceptedForTuning() ? "true" : "false")
+    << "\n";
+
+  for(std::size_t index = 0;
+      index < report.modeCandidateCount;
+      ++index)
+  {
+    const auto& candidate = report.modeCandidates[index];
+
+    std::cout
+      << "mode_" << index << "_frequency_hz="
+      << candidate.frequencyHz << "\n"
+      << "mode_" << index << "_prominence_db="
+      << candidate.prominenceDb << "\n"
+      << "mode_" << index << "_estimated_q="
+      << candidate.estimatedQ << "\n"
+      << "mode_" << index << "_confidence="
+      << candidate.confidence << "\n";
+  }
+}
+
+void writeCalibrationCsv(
+  const std::string& path,
+  const gslab::RealGuitarCalibrationReport& report
+)
+{
+  std::ofstream output(path, std::ios::trunc);
+
+  if(!output)
+    throw std::runtime_error("unable to create calibration report");
+
+  output << std::setprecision(10);
+
+  output
+    << "# sample_rate," << report.sampleRate << "\n"
+    << "# analyzed_frames," << report.analyzedFrames << "\n"
+    << "# duration_seconds," << report.durationSeconds << "\n"
+    << "# piezo_peak_dbfs," << report.piezoPeakDbFs << "\n"
+    << "# reference_peak_dbfs," << report.referencePeakDbFs << "\n"
+    << "# piezo_rms_dbfs," << report.piezoRmsDbFs << "\n"
+    << "# reference_rms_dbfs," << report.referenceRmsDbFs << "\n"
+    << "# reference_lag_samples,"
+    << report.estimatedReferenceLagSamples << "\n"
+    << "# reference_lag_ms,"
+    << report.estimatedReferenceLagMilliseconds << "\n"
+    << "# alignment_score," << report.alignmentScore << "\n"
+    << "# transfer_normalization_db,"
+    << report.transferNormalizationDb << "\n"
+    << "# spectral_shape_rms_db,"
+    << report.spectralShapeRmsDb << "\n"
+    << "# spectral_shape_max_abs_db,"
+    << report.spectralShapeMaxAbsDb << "\n"
+    << "# body_band_mean_db," << report.bodyBandMeanDb << "\n"
+    << "# quack_band_mean_db," << report.quackBandMeanDb << "\n"
+    << "# air_band_mean_db," << report.airBandMeanDb << "\n"
+    << "# supported_bands," << report.supportedBandCount << "\n"
+    << "# issue_mask,"
+    << static_cast<std::uint32_t>(report.issues) << "\n"
+    << "# capture_accepted,"
+    << (report.captureAcceptedForTuning() ? "true" : "false")
+    << "\n";
+
+  for(std::size_t index = 0;
+      index < report.modeCandidateCount;
+      ++index)
+  {
+    const auto& candidate = report.modeCandidates[index];
+
+    output
+      << "# mode_candidate," << index
+      << "," << candidate.frequencyHz
+      << "," << candidate.prominenceDb
+      << "," << candidate.estimatedQ
+      << "," << candidate.confidence
+      << "\n";
+  }
+
+  output
+    << "frequency_hz,raw_transfer_db,relative_transfer_db,"
+       "piezo_support_db,supported\n";
+
+  for(const auto& band : report.bands)
+  {
+    output
+      << band.frequencyHz << ","
+      << band.rawTransferDb << ","
+      << band.relativeTransferDb << ","
+      << band.piezoSupportDb << ","
+      << (band.supported ? 1 : 0)
+      << "\n";
+  }
+
+  if(!output)
+    throw std::runtime_error("failed while writing calibration report");
+}
+
+[[nodiscard]] gs::InputSource parseSourceType(
+  std::string_view text
+)
+{
+  if(text == "active")
+    return gs::InputSource::ActivePiezo;
+
+  if(text == "passive")
+    return gs::InputSource::PassivePiezo;
+
+  if(text == "magnetic")
+    return gs::InputSource::Magnetic;
+
+  throw std::invalid_argument(
+    "source must be active|passive|magnetic"
+  );
+}
+
+[[nodiscard]] const gsdsp::BodyProfileDefinition&
+parseBodyProfile(std::string_view text)
+{
+  if(text == "raw")
+    return gsdsp::rawConditionedProfile();
+
+  if(text == "natural")
+    return gsdsp::naturalDevelopmentProfile();
+
+  if(text == "dread")
+    return gsdsp::dreadnoughtDevelopmentProfile();
+
+  throw std::invalid_argument(
+    "profile must be raw|natural|dread"
+  );
+}
+
 void printBenchmark(
   const gslab::DeadlineBenchmarkResult& result
 )
@@ -291,7 +491,151 @@ void printUsage()
     << "  benchmark-body-switch [sampleRate] [blockSize] [iterations]\n"
     << "  source-demo <input.wav> <processed.wav> [sampleRate]\n"
     << "  body-demo <input.wav> <processed.wav> [sampleRate]\n"
-    << "  profile-compare <raw.wav> <natural.wav> <dread.wav> [sampleRate]\n";
+    << "  profile-compare <raw.wav> <natural.wav> <dread.wav> [sampleRate]\n"
+    << "  calibrate-pair <piezo.wav> <reference.wav> <report.csv>\n"
+    << "  calibrate-stereo <capture.wav> <report.csv>\n"
+    << "  evaluate-profile <piezo.wav> <reference.wav> <profile> <source> <processed.wav> <report.csv>\n";
+}
+
+int commandCalibratePair(int argc, char** argv)
+{
+  if(argc < 5)
+  {
+    throw std::invalid_argument(
+      "calibrate-pair requires piezo WAV, reference WAV, and report path"
+    );
+  }
+
+  const auto piezoWav = gslab::WavFile::read(argv[2]);
+  const auto referenceWav = gslab::WavFile::read(argv[3]);
+
+  if(piezoWav.sampleRate != referenceWav.sampleRate)
+  {
+    throw std::invalid_argument(
+      "piezo and reference WAV sample rates must match"
+    );
+  }
+
+  const auto piezo = firstChannel(piezoWav.audio);
+  const auto reference = firstChannel(referenceWav.audio);
+
+  const auto report = gslab::analyzeRealGuitarPair(
+    piezo,
+    reference,
+    static_cast<double>(piezoWav.sampleRate)
+  );
+
+  writeCalibrationCsv(argv[4], report);
+  printCalibrationSummary(report);
+
+  return report.captureAcceptedForTuning() ? 0 : 2;
+}
+
+int commandCalibrateStereo(int argc, char** argv)
+{
+  if(argc < 4)
+  {
+    throw std::invalid_argument(
+      "calibrate-stereo requires capture WAV and report path"
+    );
+  }
+
+  const auto capture = gslab::WavFile::read(argv[2]);
+
+  if(capture.audio.channelCount() < 2)
+  {
+    throw std::invalid_argument(
+      "stereo calibration capture needs piezo on channel 1 and reference on channel 2"
+    );
+  }
+
+  const auto piezo = selectedChannel(capture.audio, 0);
+  const auto reference = selectedChannel(capture.audio, 1);
+
+  const auto report = gslab::analyzeRealGuitarPair(
+    piezo,
+    reference,
+    static_cast<double>(capture.sampleRate)
+  );
+
+  writeCalibrationCsv(argv[3], report);
+  printCalibrationSummary(report);
+
+  return report.captureAcceptedForTuning() ? 0 : 2;
+}
+
+int commandEvaluateProfile(int argc, char** argv)
+{
+  if(argc < 8)
+  {
+    throw std::invalid_argument(
+      "evaluate-profile requires piezo WAV, reference WAV, profile, source, processed WAV, and report path"
+    );
+  }
+
+  const auto piezoWav = gslab::WavFile::read(argv[2]);
+  const auto referenceWav = gslab::WavFile::read(argv[3]);
+
+  if(piezoWav.sampleRate != referenceWav.sampleRate)
+  {
+    throw std::invalid_argument(
+      "piezo and reference WAV sample rates must match"
+    );
+  }
+
+  const auto sourceType = parseSourceType(argv[5]);
+  const auto& profile = parseBodyProfile(argv[4]);
+
+  auto piezo = firstChannel(piezoWav.audio);
+  const auto reference = firstChannel(referenceWav.audio);
+
+  gsdsp::SourceAdapter adapter;
+  adapter.setSourceType(sourceType);
+  adapter.prepare(piezoWav.sampleRate);
+
+  auto conditioned = processSourceAdapter(
+    piezo,
+    adapter
+  );
+
+  const auto compiled = gsdsp::compileBodyProfile(
+    profile,
+    piezoWav.sampleRate
+  );
+
+  if(!compiled.ok())
+    throw std::runtime_error("unable to compile selected body profile");
+
+  auto processed = processBody(
+    conditioned,
+    piezoWav.sampleRate,
+    compiled.prepared,
+    1.0
+  );
+
+  gslab::WavFile::writeFloat32(
+    argv[6],
+    piezoWav.sampleRate,
+    processed
+  );
+
+  const auto report = gslab::analyzeRealGuitarPair(
+    processed,
+    reference,
+    static_cast<double>(piezoWav.sampleRate)
+  );
+
+  writeCalibrationCsv(argv[7], report);
+
+  std::cout
+    << "profile=" << profile.canonicalKey << "\n"
+    << "source=" << argv[5] << "\n"
+    << "processed=" << argv[6] << "\n"
+    << "report=" << argv[7] << "\n";
+
+  printCalibrationSummary(report);
+
+  return report.captureAcceptedForTuning() ? 0 : 2;
 }
 
 int commandGenerate(int argc, char** argv)
@@ -991,6 +1335,15 @@ int main(int argc, char** argv)
     }
 
     const std::string_view command(argv[1]);
+
+    if(command == "calibrate-pair")
+      return commandCalibratePair(argc, argv);
+
+    if(command == "calibrate-stereo")
+      return commandCalibrateStereo(argc, argv);
+
+    if(command == "evaluate-profile")
+      return commandEvaluateProfile(argc, argv);
 
     if(command == "generate")
       return commandGenerate(argc, argv);
