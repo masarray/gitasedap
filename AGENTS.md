@@ -87,13 +87,15 @@ The target is **professional performance-aware architecture plus measured hot-pa
 Before modifying production code, agents must read the relevant project documents:
 
 1. `README.md`
-2. `docs/PRD.md`
-3. `docs/ARCHITECTURE.md`
-4. `docs/IMPLEMENTATION_PHASES.md`
-5. `docs/ENGINEERING_STANDARDS.md`
-6. `docs/QUALITY_GATES.md`
-7. relevant ADRs, when present
-8. relevant tests and benchmarks for the subsystem being changed
+2. `docs/PROJECT_HANDOFF.md`
+3. `docs/MULTI_THREAD_ORCHESTRATION.md`
+4. `docs/PRD.md`
+5. `docs/ARCHITECTURE.md`
+6. `docs/IMPLEMENTATION_PHASES.md`
+7. `docs/ENGINEERING_STANDARDS.md`
+8. `docs/QUALITY_GATES.md`
+9. relevant ADRs, when present
+10. relevant tests and benchmarks for the subsystem being changed
 
 Do not begin implementation from an isolated issue description while ignoring the product architecture.
 
@@ -1020,3 +1022,108 @@ Every phase must leave a verified baseline for the next phase.
 > **Move fast by removing uncertainty, not by skipping engineering.**
 >
 > **Build once, verify, then advance.**
+
+
+---
+
+## 38. Multi-thread and long-gap continuation contract
+
+GitaSedap may be developed by multiple ChatGPT threads or contributors at the same time.
+
+Parallel work is permitted only when ownership and dependencies are explicit.
+
+Before starting a new workstream:
+
+1. read `docs/PROJECT_HANDOFF.md`,
+2. read `docs/MULTI_THREAD_ORCHESTRATION.md`,
+3. continue the existing milestone issue rather than creating a duplicate,
+4. resolve the exact baseline branch and SHA,
+5. inspect existing workstream claims/comments,
+6. declare the files/authority expected to change,
+7. branch from the documented canonical baseline.
+
+A thread must not assume `main` is current.
+
+### One authority, many consumers
+
+Two concurrent threads may consume the same canonical interface.
+
+They must not independently create competing implementations for:
+- parameter identity,
+- serialized state,
+- body profile identity,
+- body engine,
+- profile publisher,
+- prepared-state exchange,
+- worker pool,
+- preset/profile cache,
+- production UI state.
+
+If concurrent work needs the same authoritative file, serialize it or agree on a producer/consumer boundary first.
+
+### Workstream claim
+
+The owning issue should contain a durable claim with:
+- base branch/SHA,
+- planned branch,
+- intended authority/files,
+- interfaces consumed/produced,
+- overlap risk.
+
+This is not bureaucracy; it prevents two isolated chat threads from solving the same problem differently.
+
+### Integration discipline
+
+Dependency order beats PR creation time.
+
+Never merge a later stacked PR before its semantic base merely because its CI is green.
+
+Never reconstruct an integration baseline by copying/cherry-picking random commits from old threads.
+
+### Required thread handoff
+
+Before a thread ends, record on the owning issue/PR:
+- branch,
+- base SHA,
+- head SHA,
+- PR,
+- CI run,
+- artifacts,
+- implemented facts,
+- verified facts,
+- measured facts,
+- untested/blocked work,
+- state/realtime/memory impact,
+- exact next action.
+
+The repository must remain understandable without access to the original chat history.
+
+### Long inactivity
+
+After a long pause:
+- reproduce the last verified baseline first,
+- do not immediately upgrade dependencies or redesign architecture,
+- verify branch/PR status,
+- then resume the owning milestone from evidence.
+
+A stale conversation is not a reason to restart the product.
+
+
+### Fast execution is part of correctness
+
+Do not turn the engineering process into its own bottleneck.
+
+Default behavior:
+- batch related implementation/test/doc changes into one coherent work unit,
+- avoid tiny incremental PRs for helpers that belong to the same capability,
+- trigger full CI at meaningful checkpoints instead of after every edit,
+- inspect all CI failures before preparing a fix batch,
+- reuse already-verified evidence for unchanged subsystems,
+- write ADRs only for durable architectural decisions,
+- continue a workstream until a meaningful capability/gate boundary rather than stopping at every small code step.
+
+Target **maximum verified capability per CI cycle**.
+
+A thread that produces many commits/CI runs but little completed product capability is considered inefficient even if every individual step is technically correct.
+
+Do not sacrifice architecture/realtime safety for speed; remove wasted coordination and redundant validation instead.
