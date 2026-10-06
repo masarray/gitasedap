@@ -72,10 +72,13 @@ The project was intentionally built as a stacked chain. At this handoff all PRs 
 | #8 | P4B generation-safe body profile publication | PR #7 branch |
 | #9 | P4C level-matched profile A/B + state v2 | PR #8 branch |
 | #10 | P4D real-guitar calibration tooling | PR #9 branch |
+| #19 | Durable handoff / multi-thread orchestration docs | PR #10 branch |
+
+PR #19 contains coordination/documentation only; it is the tail of the current stack and does not change production DSP behavior.
 
 **Do not build new production work from old `main` while this stack is still unresolved.**
 
-Issue #11 owns collapsing the verified stack into one canonical `main`.
+Issue #11 owns collapsing the verified stack (production #1–#10, then coordination #19) into one canonical `main`.
 
 ---
 
