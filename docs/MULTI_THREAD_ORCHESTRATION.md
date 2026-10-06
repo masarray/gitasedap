@@ -425,3 +425,141 @@ If the project sits untouched for months:
 6. resume the owning milestone from measured evidence.
 
 A long pause is not permission to restart architecture from scratch.
+
+
+---
+
+## 18. Fast-execution policy: governance must reduce cycle time
+
+The project optimizes for **large verified progress per iteration**, not maximum process ceremony.
+
+### Default work unit
+
+Prefer one coherent vertical milestone slice that includes:
+- implementation,
+- tests,
+- required docs/ADR updates,
+- evidence,
+- one final CI validation.
+
+Do **not** split a coherent change into many tiny PRs merely to make the history look busy.
+
+Typical target:
+- one major milestone: 1–3 meaningful implementation PRs,
+- one focused bugfix PR only when a discovered problem is independent,
+- avoid issue/PR creation for trivial helpers or mechanical edits.
+
+### CI budget
+
+Full CI is expensive shared feedback. Use it deliberately.
+
+Default sequence:
+
+```text
+inspect existing authority
+ -> design complete slice
+ -> implement coherent batch
+ -> self-review/static audit
+ -> add/update tests
+ -> push once
+ -> run full CI once
+ -> inspect all failures together
+ -> root-cause fixes in one batch
+ -> one verification rerun
+```
+
+Do not:
+- push after every file edit,
+- wait for CI between small obvious edits,
+- trigger multiple overlapping runs for the same hypothesis,
+- make cosmetic commits that restart expensive workflows,
+- rerun a green unchanged matrix just for reassurance.
+
+When GitHub cancels superseded runs, treat that as a signal that the batch was pushed too early.
+
+### Failure handling
+
+When CI fails:
+1. inspect all failing steps/logs first,
+2. identify the common/root cause,
+3. fix related failures in one coherent batch,
+4. rerun only after the batch is complete.
+
+Do not serially fix one compiler warning/test assertion at a time when the root cause can be solved once.
+
+### Evidence reuse
+
+A child milestone may rely on a parent's already-verified invariant unless it changes the responsible code.
+
+Examples:
+- a P7 parser change does not need to re-prove P3 anti-quack tuning by new bespoke evidence,
+- a P8 visual-only change should run lifecycle/state/UI regressions but should not invent new DSP benchmarks,
+- a P5 hot-path change must rerun DSP performance gates because it changes realtime work.
+
+The global CI can still run the regression suite, but contributors should not manually create duplicate evidence artifacts for unchanged subsystems.
+
+### Documentation budget
+
+Documentation is required when it preserves decisions or prevents future ambiguity.
+
+Create/update docs for:
+- new canonical authority,
+- changed architecture contract,
+- state/schema migration,
+- realtime/lifetime rule,
+- release/capture/operational procedure,
+- non-obvious tradeoff that future work could accidentally undo.
+
+Do not write an ADR for:
+- a trivial helper,
+- a local rename,
+- mechanical refactor,
+- obvious bugfix that changes no contract.
+
+### Parallelism for speed
+
+Parallelize **different authorities** rather than serializing the whole roadmap.
+
+Preferred:
+- P4D real-capture work can wait for user material while P5 engineering structure progresses.
+- P7 offline training/container work can progress alongside P5/P6.
+- P8 visual/component infrastructure can progress while DSP contracts stabilize.
+
+Do not parallelize two implementations of the same authority.
+
+### Batch-size rule
+
+A workstream should normally continue until one of these boundaries:
+- a meaningful user-visible capability is complete,
+- a canonical interface must be reviewed before downstream work,
+- a risk-heavy change deserves isolation,
+- the context/thread is nearing limits,
+- an external dependency/input blocks further progress.
+
+Do not stop simply because one helper, class, or test file is finished.
+
+### No process for process' sake
+
+Issues, ADRs, templates, benchmarks, and handoffs exist to:
+- prevent rework,
+- enable parallelism,
+- preserve verified knowledge,
+- reduce debugging cost.
+
+If a process step does not reduce risk, enable parallel work, preserve compatibility, or produce useful evidence, omit it.
+
+### Progress metric
+
+Measure progress by:
+- completed milestone capability,
+- closed risk,
+- verified regression coverage,
+- reduced uncertainty,
+- release readiness.
+
+Do not measure progress by:
+- commit count,
+- issue count,
+- PR count,
+- CI run count,
+- number of documents created.

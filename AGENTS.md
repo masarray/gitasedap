@@ -1107,3 +1107,23 @@ After a long pause:
 - then resume the owning milestone from evidence.
 
 A stale conversation is not a reason to restart the product.
+
+
+### Fast execution is part of correctness
+
+Do not turn the engineering process into its own bottleneck.
+
+Default behavior:
+- batch related implementation/test/doc changes into one coherent work unit,
+- avoid tiny incremental PRs for helpers that belong to the same capability,
+- trigger full CI at meaningful checkpoints instead of after every edit,
+- inspect all CI failures before preparing a fix batch,
+- reuse already-verified evidence for unchanged subsystems,
+- write ADRs only for durable architectural decisions,
+- continue a workstream until a meaningful capability/gate boundary rather than stopping at every small code step.
+
+Target **maximum verified capability per CI cycle**.
+
+A thread that produces many commits/CI runs but little completed product capability is considered inefficient even if every individual step is technically correct.
+
+Do not sacrifice architecture/realtime safety for speed; remove wasted coordination and redundant validation instead.

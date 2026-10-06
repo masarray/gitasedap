@@ -394,3 +394,32 @@ The project is finished when it reaches P10 with:
 - reproducible tagged V1 artifact.
 
 Until then, every milestone should leave a stronger verified baseline rather than more branches that require archaeology.
+
+
+---
+
+## 17. Delivery-speed rule
+
+The continuation model is intentionally **lean**.
+
+Future threads should not interpret the issue/PR structure as a requirement to move in tiny increments.
+
+Preferred execution:
+- take one milestone or substantial vertical slice,
+- inspect the authority once,
+- design the full slice,
+- implement/test it as a batch,
+- run CI at the first meaningful complete checkpoint,
+- fix root causes together,
+- finish the slice before handing off.
+
+The project values:
+- fewer meaningful CI cycles,
+- fewer but larger coherent PRs,
+- parallel work across independent authorities,
+- reuse of existing regression/evidence,
+- minimal documentation that preserves important contracts.
+
+The project does **not** value high commit/issue/PR counts.
+
+Safety gates remain strict because they prevent expensive rework; bureaucracy that does not reduce risk should be removed.
